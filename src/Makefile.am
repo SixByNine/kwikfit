@@ -2,8 +2,10 @@ bin_PROGRAMS=kwikfit-ascii
 lib_LTLIBRARIES=libkwikfit.la
 include_HEADERS = kwikfit.h
 
+kwikfit_ascii_LDFLAGS=libkwikfit.la
+kwikfit_ascii_SOURCES=kwikfit-ascii.c mjk_cmd.c
 
-headers = kwikfit.h
+headers = kwikfit.h mjklog.h mjk_cmd.h
 libkwikfit_la_SOURCES = $(headers) kwikfit.c
 
 libkwikfit_la_CFLAGS = -fPIC @TEMPO2_CFLAGS@
