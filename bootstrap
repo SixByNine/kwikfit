@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+set -u
+
+\rm -rf ./autoconf
+cp -r autoconf.boot autoconf
+autoreconf --install --force
+
+echo "Ready to build with:"
+echo "./configure"
+echo "make && make install"
+echo ""
