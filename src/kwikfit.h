@@ -3,17 +3,18 @@
 #ifndef __kwikfit_h
 #define __kwikfit_h
 #include <string.h>
+#include <stdio.h>
 #ifndef STREQ
 #define STREQ(a,b) (strcmp(a,b)==0)
 #endif
 
 #include <inttypes.h>
 
+extern int debugFlag; // tempo2 goodness
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-   extern int debugFlag; // tempo2 goodness
    // begin header
 
    typedef struct kwikfit_component {
@@ -35,9 +36,24 @@ extern "C" {
 	  char name[128];
    } kwikfit_template_t;
 
+   typedef struct kwikfit_result {
+	  double phase;
+	  double error;
+	  double chisq;
+	  uint64_t nbins;
+	  double *data;
+	  double *fit;
+	  double *residual;
+	  double *data_cov;
+	  kwikfit_template_t *tmpl;
+	  double *amplitudes;
+	  double **amp_cov;
+   } kwikfit_result_t;
 
 kwikfit_template_t *kwikfit_read_template(char* filename);
-void kwikfit_write(kwikfit_template_t* template, FILE* out);
+void kwikfit_write(kwikfit_template_t* tmpl, FILE* out);
+double vonMises(double phase, kwikfit_component_t *component);
+kwikfit_result_t *kwikfit_doFit(uint64_t nbins, double *profile, kwikfit_template_t *tmpl);
 
 #ifdef __cplusplus
 }

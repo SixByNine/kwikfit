@@ -73,7 +73,7 @@ int getI(char *lo, char* so, int argc, char** argv, int val){
 
 
 mjk_clock_t *init_clock(){
-   mjk_clock_t *ret =  calloc(1,sizeof(mjk_clock_t));
+   mjk_clock_t *ret =  (mjk_clock_t*)calloc(1,sizeof(mjk_clock_t));
 
 #ifndef __MACH__
    if(sysconf(_SC_MONOTONIC_CLOCK)){
