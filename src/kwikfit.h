@@ -53,7 +53,7 @@ extern "C" {
 kwikfit_template_t *kwikfit_read_template(char* filename);
 void kwikfit_write(kwikfit_template_t* tmpl, FILE* out);
 double vonMises(double phase, kwikfit_component_t *component);
-kwikfit_result_t *kwikfit_doFit(uint64_t nbins, double *profile, kwikfit_template_t *tmpl);
+kwikfit_result_t *kwikfit_doFit(uint64_t nbins, double *profile, kwikfit_template_t *tmpl, uint64_t subbin_res);
 
 #ifdef __cplusplus
 }

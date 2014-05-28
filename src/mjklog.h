@@ -4,7 +4,7 @@
  * M.Keith 2012 - let me know if this fails to compile anywhere.
  * mkeith@pulsarastronomy.net
  **/
-#define LOG_OUTFILE stderr
+#define LOG_OUTFILE stdout
 #define WHERESTR  "[%s:%d] "
 #define WHEREARG  __FILE__, __LINE__
 #define ENDL "\n"
