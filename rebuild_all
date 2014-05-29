@@ -1,0 +1,3 @@
+#!/bin/bash
+make distclean
+./bootstrap && ./doconfigure D && make -j4 && make install && make complete -j4 && make complete-install
