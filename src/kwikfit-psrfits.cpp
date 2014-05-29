@@ -82,11 +82,11 @@ int main (int argc, char** argv){
    }
    result->phase;
 
-   //sub_offs -= tbin*nbins/2; // this is the start of bin 0 relative to the start
+   //sub_offs -= tbin*nbins/2.0; // this is the start of bin 0 relative to the start
    double period=tbin*(double)nbins;
    long double tstart_s = (long double)hdr->phead.smjd + (long double)hdr->phead.stt_offs;
    long double t0 = tstart_s + (long double)sub_offs;
-   long double t_off = -result->phase * period;
+   long double t_off = result->phase * period;
    long double ToA = (long double)hdr->phead.imjd + (t0 + t_off)/86400.0;
 
    logmsg("stt_offs %f" ,hdr->phead.stt_offs);

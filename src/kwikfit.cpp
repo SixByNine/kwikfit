@@ -116,7 +116,7 @@ double **kwikfit_designMatrix(const uint64_t nbins, kwikfit_template_t *tmpl, co
    uint64_t ibin,iprof,icomp;
    double phase;
    for (ibin = 0; ibin < nbins; ibin++){
-	  phase = ref_phase + (double)ibin / (double)nbins;
+	  phase = (double)ibin / (double)nbins - ref_phase;
 	  matrix[ibin][tmpl->nprof]=1;
 	  for (iprof=0; iprof < tmpl->nprof; iprof++){
 		 kwikfit_profile_t *prof = tmpl->profs+iprof;
@@ -224,7 +224,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 			exit(1);
 		 }
 
-		 kwikfit_rotate_array(profile,fit_yvals,nbins,ibin);
+		 kwikfit_rotate_array(profile,fit_yvals,nbins,-ibin);
 		 TKmultMatrixVec_sq(uinv, fit_yvals,nbins,white_yvals);
 	//	 kwikfit_rotate_array(white_profile,white_yvals,nbins,ibin);
 		 /*
@@ -248,7 +248,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 			printf("\n");
 			TKmultMatrixVec(designMatrix,outP,nbins,nfit,outProf);
 			// rotate the profile back
-			kwikfit_rotate_array(outProf,best_profile,nbins,-ibin);
+			kwikfit_rotate_array(outProf,best_profile,nbins,ibin);
 		 }
 	  }
    }
