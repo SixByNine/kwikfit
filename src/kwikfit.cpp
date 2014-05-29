@@ -177,7 +177,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
    double **covMatrix=malloc_uinv(nbins);
    logmsg("cov[0] %lg",cov[0]);
-   cov[0]+=1e-9;
+   cov[0]+=1e-6;
 
    for (i=0; i<nbins; i++){
 	  //printf("%d %lf %d COVAR\n",i,cov[i],nitr);
@@ -191,6 +191,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 
    double *fit_yvals = (double*) calloc(sizeof(double),nbins);
+   double*  white_profile = (double*) calloc(sizeof(double),nbins);
    double*  white_yvals = (double*) calloc(sizeof(double),nbins);
    double **uinv = malloc_uinv(nbins);
 
@@ -225,6 +226,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 		 kwikfit_rotate_array(profile,fit_yvals,nbins,ibin);
 		 TKmultMatrixVec_sq(uinv, fit_yvals,nbins,white_yvals);
+	//	 kwikfit_rotate_array(white_profile,white_yvals,nbins,ibin);
 		 /*
 		  * double TKleastSquares(double* b, double* white_b,
 		  *       double** designMatrix, double** white_designMatrix,
