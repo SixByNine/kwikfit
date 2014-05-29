@@ -29,20 +29,20 @@ void getArgs(int *argc, char** argv){
    }
    *argc=n;
 }
-char* getS(char *lo, char* so, int argc, char** argv, char* val){
+const char* getS(const char *lo, const char* so, int argc, char** argv, const char* val){
    int i;
-   char* ret = val;
+   char* ret;
    for (i=1; i < argc; i++){
 	  if (STREQ(argv[i],lo) || STREQ(argv[i],so)){
 		 ret = *(argv+i+1);
 		 argv[i][0]=1;
-		 break;
+		 return ret;
 	  }
    }
-   return ret;
+   return val;
 }
 
-char getB(char *lo, char* so, int argc, char** argv, char val){
+char getB(const char *lo, const char* so, int argc, char** argv, char val){
    int i;
    char ret = val;
    for (i=1; i < argc; i++){
@@ -56,14 +56,14 @@ char getB(char *lo, char* so, int argc, char** argv, char val){
 }
 
 
-double getF(char *lo, char* so, int argc, char** argv, double val){
-   char* str = getS(lo,so,argc,argv,NULL);
+double getF(const char *lo, const char* so, int argc, char** argv, double val){
+   const char* str = getS(lo,so,argc,argv,NULL);
    if (str==NULL) return val;
    else return atof(str);
 }
 
-int getI(char *lo, char* so, int argc, char** argv, int val){
-   char* str = getS(lo,so,argc,argv,NULL);
+int getI(const char *lo, const char* so, int argc, char** argv, int val){
+   const char* str = getS(lo,so,argc,argv,NULL);
    if (str==NULL) return val;
    else return atoi(str);
 }

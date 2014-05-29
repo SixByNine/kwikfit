@@ -10,12 +10,12 @@
 #define clockid_t int
 #endif
 
-char* getS(char *lo, char* so, int argc, char** argv, char* val);
+const char* getS(const char *lo, const char* so, int argc, char** argv, const char* val);
 
-char getB(char *lo, char* so, int argc, char** argv, char val);
+char getB(const char *lo, const char* so, int argc, char** argv, char val);
 
-double getF(char *lo, char* so, int argc, char** argv, double val);
-int getI(char *lo, char* so, int argc, char** argv, int val);
+double getF(const char *lo, const char* so, int argc, char** argv, double val);
+int getI(const char *lo, const char* so, int argc, char** argv, int val);
 
 void getArgs(int *argc, char** argv);
 

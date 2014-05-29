@@ -40,20 +40,33 @@ extern "C" {
 	  double phase;
 	  double error;
 	  double chisq;
+	  double *phase_plot;
+	  double *chisq_plot;
+	  uint64_t nplot;
 	  uint64_t nbins;
+	  uint64_t nfree;
 	  double *data;
 	  double *fit;
 	  double *residual;
 	  double *data_cov;
 	  kwikfit_template_t *tmpl;
 	  double *amplitudes;
-	  double **amp_cov;
+	  double *amp_err;
+	  double **amp_cvm;
+	  double *chifit;
    } kwikfit_result_t;
 
-kwikfit_template_t *kwikfit_read_template(char* filename);
+kwikfit_template_t *kwikfit_read_template(const char* filename);
 void kwikfit_write(kwikfit_template_t* tmpl, FILE* out);
 double vonMises(double phase, kwikfit_component_t *component);
-kwikfit_result_t *kwikfit_doFit(uint64_t nbins, double *profile, kwikfit_template_t *tmpl, uint64_t subbin_res);
+kwikfit_result_t *kwikfit_doFit(uint64_t nbins, double *profile, kwikfit_template_t *tmpl, uint64_t nitr, uint64_t subbin_res);
+double *kwikfit_get_cov(double *profile, uint64_t nbins);
+
+void kwikfit_rotate_array(double* in, double* out, const int64_t nbins, const int64_t r);
+
+#ifdef HAVE_PGPLOT
+void kwikfit_plot_result(kwikfit_result_t* result, const char* device);
+#endif
 
 #ifdef __cplusplus
 }
