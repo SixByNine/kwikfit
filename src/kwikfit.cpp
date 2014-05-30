@@ -190,9 +190,11 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    }
 
 
-   double *fit_yvals = (double*) calloc(sizeof(double),nbins);
-   double*  white_profile = (double*) calloc(sizeof(double),nbins);
-   double*  white_yvals = (double*) calloc(sizeof(double),nbins);
+   //double *fit_yvals = (double*) calloc(sizeof(double),nbins);
+   //double*  white_yvals = (double*) calloc(sizeof(double),nbins);
+   double** fit_yvals=malloc_uinv(nbins);
+   double** white_yvals=malloc_uinv(nbins);
+
    double **uinv = malloc_uinv(nbins);
 
    double phase = 0.;
@@ -206,11 +208,17 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    double **cvm = malloc_uinv(nfit);
    double *chisq_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
    double *phase_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
+   uint64_t ibin,isub,index;
+   logmsg("Creating whitened profile");
+   for (ibin=0; ibin<nbins; ibin++){
+	  kwikfit_rotate_array(profile,fit_yvals[ibin],nbins,-ibin);
+	  TKmultMatrixVec_sq(uinv, fit_yvals[ibin],nbins,white_yvals[ibin]);
+   }
+   logmsg("Done creating whitened profile");
 
    double true_phase;
    double best_phase=0;
    double best_chisq=1e99;
-   uint64_t ibin,isub,index;
    for (isub=0; isub<subbin_res; isub++){
 	  phase = (double)isub/(double)subbin_res/(double)nbins;
 	  designMatrix = kwikfit_designMatrix(nbins,tmpl,phase);
@@ -224,9 +232,6 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 			exit(1);
 		 }
 
-		 kwikfit_rotate_array(profile,fit_yvals,nbins,-ibin);
-		 TKmultMatrixVec_sq(uinv, fit_yvals,nbins,white_yvals);
-	//	 kwikfit_rotate_array(white_profile,white_yvals,nbins,ibin);
 		 /*
 		  * double TKleastSquares(double* b, double* white_b,
 		  *       double** designMatrix, double** white_designMatrix,
@@ -234,7 +239,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 		  *                   double* outP, double* e, double** cvm)
 		  */
 
-		 double chisq = TKleastSquares(fit_yvals,white_yvals,designMatrix,white_designMatrix,nbins,nfit,tol,1,outP,err,cvm);
+		 double chisq = TKleastSquares(fit_yvals[ibin],white_yvals[ibin],designMatrix,white_designMatrix,nbins,nfit,tol,1,outP,err,cvm);
 		 chisq_plot[index] = chisq;
 		 phase_plot[index] = true_phase;
 		 if(chisq < best_chisq){
@@ -259,8 +264,8 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    free_blas(designMatrix);
    free_blas(white_designMatrix);
    free_uinv(uinv);
-   free(fit_yvals);
-   free(white_yvals);
+   free_uinv(fit_yvals);
+   free_uinv(white_yvals);
    if (nitr > 0){
 	  free(outP);
 	  free(err);
@@ -277,7 +282,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 		 outProf[i] = profile[i]-best_profile[i];
 	  }
 	  double polyfit[3];
-	  
+
 	  uint64_t nplot = subbin_res*nbins;
 	  double min=TKfindMin_d(chisq_plot,nplot);
 	  double max=2.*min;
@@ -316,7 +321,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 	  double icept=2*min;
 	  double error = (-polyfit[1] + 
-		 sqrt(polyfit[1]*polyfit[1] - 4.0 * polyfit[2]*(-icept+polyfit[0])))/2.0/polyfit[2];
+			sqrt(polyfit[1]*polyfit[1] - 4.0 * polyfit[2]*(-icept+polyfit[0])))/2.0/polyfit[2];
 
 	  logmsg("err %lf",error);
 	  error-=bpp;
