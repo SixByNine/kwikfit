@@ -17,86 +17,112 @@
 int main (int argc, char** argv){
    const char *template_fname = getS("--template","-t",argc,argv,"example.kwtemplate");
    const char *pgdev = getS("--device","-D",argc,argv,"/xs");
+   const char *outfile = getS("--out","-o",argc,argv,"kwikfit.tim");
 
    writeResiduals=getB("--writeres","",argc,argv,0);
    debugFlag=getB("--debug","-d",argc,argv,0);
-   getArgs(&argc,argv);
    uint64_t nitr = getI("--nitr","-i",argc,argv,3);
    uint64_t nsubbin = getI("--nsub","-s",argc,argv,4);
    logmsg("reading '%s'",template_fname);
    kwikfit_template_t *tmpl = kwikfit_read_template(template_fname);
    kwikfit_write(tmpl,stdout);
+   FILE *out = fopen(outfile,"w");
+   getArgs(&argc,argv);
 
-   logmsg("Reading '%s' as psrfits",argv[1]);
+   fprintf(out,"FORMAT 1\n");
+   for(uint64_t ifile = 1; ifile < argc; ifile++){
+	  logmsg("Reading '%s' as psrfits",argv[ifile]);
+	  fitsfile *fp = openFitsFile(argv[ifile]);
+
+	  dSet *hdr = initialiseDset();
+
+	  loadPrimaryHeader(fp, hdr);
+	  const uint64_t nbins=hdr->phead.nbin;
+	  //int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *freq_y,float *time_y,float* bpass,int sub0);
 
 
-   fitsfile *fp = openFitsFile(argv[1]);
+	  int colnum;
+	  int status=0;
+	  if(fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status)){
+		 logerr("error moving to subint table");
+	  }
+	  float *prof=(float*)calloc(sizeof(float),nbins);
+	  double *profile=(double*)calloc(sizeof(double),nbins);
 
-   dSet *hdr = initialiseDset();
+	  if(fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status)){
+		 logerr("error getting data column");
+	  }
 
-   loadPrimaryHeader(fp, hdr);
-   const uint64_t nbins=hdr->phead.nbin;
-//int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *freq_y,float *time_y,float* bpass,int sub0);
+	  int initflag=0;
+	  if(fits_read_col_flt(fp,colnum,1,1,hdr->phead.nbin,0,prof,&initflag,&status)){
+		 logerr("error reading profile");
+	  }
+	  if(fits_get_colnum(fp,CASEINSEN,"OFFS_SUB",&colnum,&status)){
+		 logerr("error getting OFFS_SUB column");
+	  }
+	  double sub_offs;
+	  if(fits_read_col_dbl(fp,colnum,1,1,1,0,&sub_offs,&initflag,&status)){
+		 logerr("error reading OFFS_SUB");
+	  }
+
+	  char tmp[88];
+	  fits_read_key(fp,TSTRING,"TBIN",tmp,NULL,&status);
+	  double tbin=atof(tmp);
+
+	  if(tbin==0){
+		 if(fits_movnam_hdu(fp,BINARY_TBL,"HISTORY",1,&status)){
+			logerr("error moving to history table");
+		 }
+		 if(fits_get_colnum(fp,CASEINSEN,"TBIN",&colnum,&status)){
+			logerr("error getting tbin column");
+		 }
+		 if(fits_read_col_dbl(fp,colnum,1,1,1,0,&tbin,&initflag,&status)){
+			logerr("error reading tbin");
+		 }
+	  }
+
+	  logmsg("status: %d initflag: %d",status,initflag);
+	  double min = TKfindMin_f(prof,nbins);
+	  for(uint64_t i=0; i < nbins; i++){
+		 profile[i]=prof[i]-min;
+	  }
+	  free(prof);
+	  kwikfit_result_t *result = kwikfit_doFit(nbins,profile,tmpl,nitr,nsubbin);
+	  kwikfit_plot_result(result,pgdev);
+	  printf("\n\n");
+	  printf("%lf \u00b1 %lf\n",result->phase,result->error);
+	  if(result->phase < 0){
+		 printf("%lf \u00b1 %lf\n",result->phase+1.0,result->error);
+	  }
+	  result->phase;
+
+	  //sub_offs -= tbin*nbins/2.0; // this is the start of bin 0 relative to the start
+	  double period=tbin*(double)nbins;
+	  long double tstart_s = (long double)hdr->phead.smjd + (long double)hdr->phead.stt_offs;
+	  long double t0 = tstart_s + (long double)sub_offs;
+	  long double t_off = result->phase * period;
+	  long double ToA = (long double)hdr->phead.imjd + (t0 + t_off)/86400.0;
+
+	  logmsg("stt_offs %f" ,hdr->phead.stt_offs);
+	  logmsg("imjd %d" ,hdr->phead.imjd);
+	  logmsg("smjd %f" ,hdr->phead.smjd);
+	  logmsg("sub_offs %lf" ,sub_offs);
+	  logmsg("period %lf" ,period);
 
 
-   int colnum;
-   int status=0;
-   if(fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status)){
-	  logerr("error moving to subint table");
+	  double freq=hdr->phead.freq;
+
+	  printf("%s 1400 \t %.16Lf \t %f 8\n",argv[ifile],ToA,result->error*period*1e6);
+	  fprintf(out," %s %.6lf \t %.16Lf \t %f 8 -alg KW",argv[ifile],freq,ToA,result->error*period*1e6);
+	  double ref=result->amplitudes[0];
+	  for(uint64_t i=0; i<result->tmpl->nprof; i++){
+		 fprintf(out," -kw%s %.2f",result->tmpl->profs[i].name,result->amplitudes[i]/ref);
+	  }
+	  fprintf(out,"\n");
+	  fflush(out);
+	  kwikfit_free_result(result);
+	  freeDset(hdr);
+	  closeFitsFile(fp);
    }
-   float *prof=(float*)calloc(sizeof(float),nbins);
-   double *profile=(double*)calloc(sizeof(double),nbins);
-
-   if(fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status)){
-	  logerr("error getting data column");
-   }
-
-   int initflag=0;
-   if(fits_read_col_flt(fp,colnum,1,1,hdr->phead.nbin,0,prof,&initflag,&status)){
-	  logerr("error reading profile");
-   }
-   if(fits_get_colnum(fp,CASEINSEN,"OFFS_SUB",&colnum,&status)){
-	  logerr("error getting OFFS_SUB column");
-   }
-   double sub_offs;
-   if(fits_read_col_dbl(fp,colnum,1,1,1,0,&sub_offs,&initflag,&status)){
-	  logerr("error reading OFFS_SUB");
-   }
-
-   char tmp[88];
-   fits_read_key(fp,TSTRING,"TBIN",tmp,NULL,&status);
-   double tbin=atof(tmp);
-
-   logmsg("status: %d initflag: %d",status,initflag);
-   double min = TKfindMin_f(prof,nbins);
-   for(uint64_t i=0; i < nbins; i++){
-	  profile[i]=prof[i]-min;
-   }
-   free(prof);
-   kwikfit_result_t *result = kwikfit_doFit(nbins,profile,tmpl,nitr,nsubbin);
-   kwikfit_plot_result(result,pgdev);
-   printf("\n\n");
-   printf("%lf \u00b1 %lf\n",result->phase,result->error);
-   if(result->phase < 0){
-	  printf("%lf \u00b1 %lf\n",result->phase+1.0,result->error);
-   }
-   result->phase;
-
-   //sub_offs -= tbin*nbins/2.0; // this is the start of bin 0 relative to the start
-   double period=tbin*(double)nbins;
-   long double tstart_s = (long double)hdr->phead.smjd + (long double)hdr->phead.stt_offs;
-   long double t0 = tstart_s + (long double)sub_offs;
-   long double t_off = result->phase * period;
-   long double ToA = (long double)hdr->phead.imjd + (t0 + t_off)/86400.0;
-
-   logmsg("stt_offs %f" ,hdr->phead.stt_offs);
-   logmsg("imjd %d" ,hdr->phead.imjd);
-   logmsg("smjd %f" ,hdr->phead.smjd);
-   logmsg("sub_offs %lf" ,sub_offs);
-   logmsg("period %lf" ,period);
-
-
-
-   printf("%s 1400 \t %.16Lf \t %f 8\n",argv[1],ToA,result->error*period*1e6);
    return 0;
 }

@@ -18,9 +18,15 @@
 void kwikfit_rotate_array(double* in, double* out, const int64_t nbins, const int64_t r){
    int64_t i;
    int64_t j;
+   int64_t n=0;
    for (i=0; i< nbins; i++){
 	  j = i-r;
-	  while(j < 0)j+=nbins;
+	  n=0;
+	  while(j < 0){
+		 n+=1;
+		 j+=nbins;
+		 if(n>10)exit(1);
+	  }
 	  j = j%nbins;
 	  out[i] = in[j];
    }
@@ -49,7 +55,7 @@ kwikfit_template_t *kwikfit_read_template(const char* filename){
 	  if (line[0]=='#' || line[0]=='\0')continue;
 	  sscanf(line,"%s",str);
 	  if (STREQ(str,"KWTEMPLATE")){
-		 strcpy(result->name,line+11);
+		 sscanf(line+11,"%s",result->name);
 		 logdbg("KWTEMPLATE '%s'",result->name);
 		 result->nprof=0;
 		 result->profs=NULL;
@@ -60,7 +66,7 @@ kwikfit_template_t *kwikfit_read_template(const char* filename){
 		 iProf++;
 		 result->profs = (kwikfit_profile_t*)realloc(result->profs,
 			   sizeof(kwikfit_profile_t)*result->nprof);
-		 strcpy(result->profs[iProf].name,line+10);
+		 sscanf(line+10,"%s",result->profs[iProf].name);
 		 logdbg("KWPROFILE '%s'",result->profs[iProf].name);
 		 result->profs[iProf].comps=NULL;
 		 result->profs[iProf].ncomp=0;
@@ -151,24 +157,37 @@ double *kwikfit_get_cov(double *profile, uint64_t nbins){
 
    return cov;
 }
-kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t subbin_res,double* best_profile, uint64_t nitr,char do_cvm){
+kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t subbin_res,double* best_profile, const uint64_t nitr,const char do_cvm, const int64_t icount, double cphase, const double cerr){
    uint64_t i,j;
    int64_t k;
    const double tol = 1.0e-27;  /* Tolerence for singular value decomposition routine */
+   int64_t left=0;
+   int64_t right=nbins;
 
+   //cphase= -cphase;
+   if(icount > 2){
+	  double p = cphase-2*cerr;
+	  while (p < 0){
+		 cphase+=1.0;
+		 p = cphase-2*cerr;
+	  }
+	  left = nbins * (cphase-2*cerr);
+	  right = nbins * (cphase+2*cerr);
+	  left+=nbins;
+	  right+=nbins;
+	  left-=1;
+	  right+=1;
+   }
+   if(right-left >= nbins){
+	  left=0;
+	  right=nbins;
+   }
    // TODO: consider weight the points under the pulse a little higher as the RMS is probably bigger?
-
-   if(false){
-   double delta = (profile[nbins-1]-profile[0])/(double)nbins;
-   // remove any jump at the edge of the profile
-   for (i=0; i<nbins; i++){
-	  profile[i]-=delta*i;
-   }
-   }
 
    // remove the best fit template so far to get a better estimate of the covariance.
    double *outProf = (double*)calloc(sizeof(double),nbins);
    for (i=0; i<nbins; i++){
+	  if(best_profile[i]<0)best_profile[i]=0;
 	  outProf[i] = profile[i]-best_profile[i];
    }
 
@@ -185,10 +204,9 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 		 k = (int64_t)i-(int64_t)j;
 		 while (k<0)k+=nbins;
 		 if(do_cvm || i==j)
-		 covMatrix[i][j] = cov[k];
+			covMatrix[i][j] = cov[k];
 	  }
    }
-
 
    //double *fit_yvals = (double*) calloc(sizeof(double),nbins);
    //double*  white_yvals = (double*) calloc(sizeof(double),nbins);
@@ -208,29 +226,41 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    double **cvm = malloc_uinv(nfit);
    double *chisq_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
    double *phase_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
+
    uint64_t ibin,isub,index;
+   double best_chisq=1e99;
+   for (ibin=0; ibin<nbins*subbin_res; ibin++){
+	  chisq_plot[ibin]=best_chisq;
+   }
    logmsg("Creating whitened profile");
-   for (ibin=0; ibin<nbins; ibin++){
+   for (uint64_t iibin=0; iibin<nbins; iibin++){
+	  ibin=(iibin+left)%nbins;
 	  kwikfit_rotate_array(profile,fit_yvals[ibin],nbins,-ibin);
 	  TKmultMatrixVec_sq(uinv, fit_yvals[ibin],nbins,white_yvals[ibin]);
+	  if(iibin > right-left)break;
    }
    logmsg("Done creating whitened profile");
 
    double true_phase;
    double best_phase=0;
-   double best_chisq=1e99;
    for (isub=0; isub<subbin_res; isub++){
 	  phase = (double)isub/(double)subbin_res/(double)nbins;
+	  logmsg("sb %d phase %lf",isub,phase);
 	  designMatrix = kwikfit_designMatrix(nbins,tmpl,phase);
 	  TKmultMatrix_sq(uinv,designMatrix,nbins,nfit,white_designMatrix);
-	  for (ibin=0; ibin<nbins; ibin++){
+	  for (uint64_t iibin=0; iibin<nbins; iibin++){
+		 ibin=(iibin+left)%nbins;
 		 true_phase=phase + (double)ibin/(double)nbins;
 		 if(true_phase >= 0.5)true_phase-=1.0;
-		 index = floor((true_phase+0.5)*subbin_res*nbins+0.5);
+		 index = floor((1.0-true_phase)*subbin_res*nbins+0.5);
+		 index = index%(subbin_res*nbins);
 		 if(phase_plot[index]!=0){
-			logmsg("ERROR %d %lg",index,true_phase);
+			logmsg("sb %d left %d, right %d ibin %d iibin %d nbins %d index %d %d",isub,left,right,ibin,iibin,nbins,index,ibin*subbin_res+isub);
+			logmsg("ERROR index=%d is reused for phase %lg",index,true_phase);
 			exit(1);
 		 }
+		 phase_plot[index] = true_phase;
+		 if(iibin > right-left)continue;
 
 		 /*
 		  * double TKleastSquares(double* b, double* white_b,
@@ -241,11 +271,10 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 		 double chisq = TKleastSquares(fit_yvals[ibin],white_yvals[ibin],designMatrix,white_designMatrix,nbins,nfit,tol,1,outP,err,cvm);
 		 chisq_plot[index] = chisq;
-		 phase_plot[index] = true_phase;
 		 if(chisq < best_chisq){
 			best_chisq=chisq;
 			best_phase=true_phase;
-			logmsg("Phase: %lf Chisq: %lg red-Chisq: %lg",true_phase,chisq,chisq/(nbins-nfit-1));
+			logmsg("Phase: %lf Chisq: %lg red-Chisq: %lg index: %ld/%ld",best_phase,chisq,chisq/(nbins-nfit-1),index,subbin_res*nbins);
 			printf("  FIT:\t");
 			for (i=0; i<nfit; i++){
 			   printf("%lg (%lg)\t",outP[i],err[i]);
@@ -257,6 +286,87 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 		 }
 	  }
    }
+
+   double polyfit[3];
+
+   uint64_t nplot = subbin_res*nbins;
+   double min=TKfindMin_d(chisq_plot,nplot);
+   double max=2.*min;
+   double chisq_rot[nplot];
+   double phase_rot[nplot];
+   int64_t centre = ((int64_t)floor((1.0-best_phase) * (double)nplot));
+   centre=centre%nplot;
+
+   logmsg("rotate >> %d %lf %lf phs=%lf",centre,chisq_plot[(centre)],min,phase_plot[centre]);
+   kwikfit_rotate_array(chisq_plot,chisq_rot,nplot,(nplot/2)-centre);
+   kwikfit_rotate_array(phase_plot,phase_rot,nplot,(nplot/2)-centre);
+   int64_t l=0;
+   int64_t r=0;
+
+   for(l = nplot/2; l > 0; l--){
+	  if (chisq_rot[l] > max)break;
+   }
+   for(r=nplot/2; r <nplot; r++){
+	  if (chisq_rot[r] > max)break;
+   }
+
+
+   l-=1;
+   r+=1;
+   if(l<0)l=0;
+   if(r>=nplot)r=nplot-1;
+   uint64_t npolyfit=r-l;
+   double polyfit_x[npolyfit];
+   double polyfit_y[npolyfit];
+
+   for(i=l; i < r; i++){
+	  polyfit_x[i-l] = phase_rot[i]-best_phase;
+	  if (polyfit_x[i-l] < -0.5)polyfit_x[i-l]+=1;
+	  if (polyfit_x[i-l] >  0.5)polyfit_x[i-l]-=1;
+	  polyfit_y[i-l] = chisq_rot[i];
+	  logmsg("PF %lf %lf",polyfit_x[i-l],polyfit_y[i-l]);
+   }
+
+   //   logmsg("rotate <<");
+   //   kwikfit_rotate_array(chisq_plot,chisq_rot,nplot,-((nplot/2)-centre));
+   //   kwikfit_rotate_array(phase_plot,phase_rot,nplot,-((nplot/2)-centre));
+
+   logmsg("SPAN %ld ] %ld -> %ld \t %lf -> %lf",npolyfit,l,r,polyfit_x[0],polyfit_x[npolyfit-1]);
+   TKfindPoly_d(polyfit_x,polyfit_y,npolyfit,3,polyfit);
+   logmsg("POLYFIT %lg %lg %lg",polyfit[0],polyfit[1],polyfit[2]);
+
+   min = polyfit[0]-polyfit[1]*polyfit[1]/4.0/polyfit[2];
+
+   double bpp = -polyfit[1]/2.0/polyfit[2];
+
+   logmsg("Chisq min=%lf %lf %lf",min,bpp,bpp+best_phase);
+   fflush(stdout);
+   double *chifit = (double*)calloc(sizeof(double),nplot);
+
+   double icept=2*min;
+   double error = (-polyfit[1] + 
+		 sqrt(polyfit[1]*polyfit[1] - 4.0 * polyfit[2]*(-icept+polyfit[0])))/2.0/polyfit[2];
+
+   logmsg("err %lf",error);
+   error-=bpp;
+   logmsg("err %lf",error);
+
+
+   double v[3];
+   for (i=0;i<nplot;i++)
+   {
+	  double phase = i/(double)nplot+best_phase;
+	  if(phase > 0.5)phase-=1.0;
+	  if(phase < -0.5)phase+=1.0;
+	  TKfitPoly(phase,v,3);
+	  chisq_rot[i]=0;
+	  for (j=0;j<3;j++)
+		 chisq_rot[i] += v[j]*polyfit[j];
+   }
+
+
+   kwikfit_rotate_array(chisq_rot,chifit,nplot,0);
+
 
 
    fflush(stdout);
@@ -274,74 +384,17 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 	  free(outProf);
 	  free(phase_plot);
 	  free(chisq_plot);
-	  return kwikfit_doFit_INNER(nbins,profile,tmpl,2*subbin_res,best_profile,nitr-1,1);
+	  return kwikfit_doFit_INNER(nbins,profile,tmpl,2*subbin_res,best_profile,nitr-1,1,icount+1,(best_phase+bpp), error);
    } else {
 	  logmsg("Create output");
 	  kwikfit_result_t *result = (kwikfit_result_t*) calloc(sizeof(kwikfit_result_t),1);
+
+
 	  for (i=0; i<nbins; i++){
 		 outProf[i] = profile[i]-best_profile[i];
 	  }
-	  double polyfit[3];
-
-	  uint64_t nplot = subbin_res*nbins;
-	  double min=TKfindMin_d(chisq_plot,nplot);
-	  double max=2.*min;
-	  double chisq_rot[nplot];
-	  const uint64_t centre = ((int64_t)floor(best_phase * nplot + 0.5));
-
-	  logmsg("rotate >>");
-	  kwikfit_rotate_array(chisq_plot,chisq_rot,nplot,-centre);
-	  int64_t l=0;
-	  int64_t r=0;
-
-	  for(l = nplot/2; l > 0; l--){
-		 if (chisq_rot[l] > max)break;
-	  }
-	  for(r=nplot/2; r <nplot; r++){
-		 if (chisq_rot[r] > max)break;
-	  }
-	  uint64_t npolyfit=r-l;
-	  double polyfit_x[npolyfit];
-	  double polyfit_y[npolyfit];
-
-	  for(i=l; i < r; i++){
-		 polyfit_x[i-l] = phase_plot[i];
-		 polyfit_y[i-l] = chisq_rot[i];
-	  }
-
-	  logmsg("SPAN %ld ] %ld -> %ld \t %lf -> %lf",npolyfit,l,r,polyfit_x[0],polyfit_x[npolyfit-1]);
-	  TKfindPoly_d(polyfit_x,polyfit_y,npolyfit,3,polyfit);
-	  logmsg("POLYFIT %lg %lg %lg",polyfit[0],polyfit[1],polyfit[2]);
-
-	  min = polyfit[0]-polyfit[1]*polyfit[1]/4.0/polyfit[2];
-	  double bpp = -polyfit[1]/2.0/polyfit[2];
-	  logmsg("Chisq min=%lf %lf",min,bpp+best_phase);
-	  fflush(stdout);
-	  double *chifit = (double*)calloc(sizeof(double),nplot);
-
-	  double icept=2*min;
-	  double error = (-polyfit[1] + 
-			sqrt(polyfit[1]*polyfit[1] - 4.0 * polyfit[2]*(-icept+polyfit[0])))/2.0/polyfit[2];
-
-	  logmsg("err %lf",error);
-	  error-=bpp;
-	  logmsg("err %lf",error);
-
-
-	  double v[3];
-	  for (i=0;i<nplot;i++)
-	  {
-		 TKfitPoly(phase_plot[i],v,3);
-		 chisq_rot[i]=0;
-		 for (j=0;j<3;j++)
-			chisq_rot[i] += v[j]*polyfit[j];
-	  }
-
-	  logmsg("rotate <<");
-	  kwikfit_rotate_array(chisq_rot,chifit,nplot,centre);
-
 	  result->chifit = chifit;
-	  result->phase = best_phase+bpp;
+	  result->phase = (best_phase+bpp);
 	  result->error = error;
 	  result->chisq = best_chisq;
 	  result->nfree = nbins-nfit-1;
@@ -363,7 +416,21 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 kwikfit_result_t *kwikfit_doFit(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t nitr, const uint64_t subbin_res){
    double *best_profile=(double*)calloc(sizeof(double),nbins);
-   return kwikfit_doFit_INNER(nbins,profile,tmpl,subbin_res,best_profile,nitr,0);
+   return kwikfit_doFit_INNER(nbins,profile,tmpl,subbin_res,best_profile,nitr,0,0,0,0);
    free(best_profile);
+}
+
+void kwikfit_free_result(kwikfit_result_t* res){
+   free(res->phase_plot);
+   free(res->chisq_plot);
+   free(res->data);
+   free(res->fit);
+   free(res->residual);
+   free(res->data_cov);
+   free(res->amplitudes);
+   free(res->amp_err);
+   free_blas(res->amp_cvm);
+   free(res->chifit);
+   free(res);
 }
 

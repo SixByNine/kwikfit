@@ -4,11 +4,11 @@ include_HEADERS = kwikfit.h pfits/pfits.h
 if HAVE_CFITSIO
 SUBDIRS=pfits
 bin_PROGRAMS+=kwikfit-psrfits
-kwikfit_psrfits_LDFLAGS=libkwikfit.la pfits/libpfits.la
+kwikfit_psrfits_LDADD=libkwikfit.la pfits/libpfits.la
 kwikfit_psrfits_SOURCES=kwikfit-psrfits.cpp mjk_cmd.cpp
 endif
 
-kwikfit_ascii_LDFLAGS=libkwikfit.la
+kwikfit_ascii_LDADD=libkwikfit.la
 kwikfit_ascii_SOURCES=kwikfit-ascii.cpp mjk_cmd.cpp
 
 headers = kwikfit.h mjklog.h mjk_cmd.h

@@ -64,6 +64,7 @@ double *kwikfit_get_cov(double *profile, uint64_t nbins);
 
 void kwikfit_rotate_array(double* in, double* out, const int64_t nbins, const int64_t r);
 
+void kwikfit_free_result(kwikfit_result_t* res);
 #ifdef HAVE_PGPLOT
 void kwikfit_plot_result(kwikfit_result_t* result, const char* device);
 #endif

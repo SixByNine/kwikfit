@@ -31,7 +31,7 @@ int main (int argc, char** argv){
    uint64_t i=0;
    while(!feof(f)){
 	  fscanf(f,"%lf",profile+i);
-	  if(addSin)profile[i]+=0.3*sin(M_PI*(double)i/512.0);
+	  if(addSin)profile[i]+=1.3*sin(M_PI*(double)i/512.0);
 //	  logmsg("%d %lf",i,profile[i]);
 	  i++;
    }
