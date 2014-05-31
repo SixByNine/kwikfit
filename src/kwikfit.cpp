@@ -157,7 +157,7 @@ double *kwikfit_get_cov(double *profile, uint64_t nbins){
 
    return cov;
 }
-kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t subbin_res,double* best_profile, const uint64_t nitr,const char do_cvm, const int64_t icount, double cphase, const double cerr){
+kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t subbin_res,double* best_profile, const uint64_t nitr,const char do_cvm, const int64_t icount, double cphase, const double cerr, double* phase_plot, double* chisq_plot){
    uint64_t i,j;
    int64_t k;
    const double tol = 1.0e-27;  /* Tolerence for singular value decomposition routine */
@@ -224,13 +224,30 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    double *outP = (double*)calloc(sizeof(double),nfit);
    double *err = (double*)calloc(sizeof(double),nfit);
    double **cvm = malloc_uinv(nfit);
-   double *chisq_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
-   double *phase_plot = (double*)calloc(sizeof(double),subbin_res*nbins);
+
+   chisq_plot = (double*)realloc(chisq_plot,sizeof(double)*subbin_res*nbins);
+   phase_plot = (double*)realloc(phase_plot,sizeof(double)*subbin_res*nbins);
 
    uint64_t ibin,isub,index;
    double best_chisq=1e99;
-   for (ibin=0; ibin<nbins*subbin_res; ibin++){
-	  chisq_plot[ibin]=best_chisq;
+   double true_phase;
+   for (uint64_t ibin=0; ibin<nbins*subbin_res; ibin++){
+		 chisq_plot[ibin]=chisq_plot[ibin/2];
+		 phase_plot[ibin]=phase_plot[ibin/2];
+   }
+
+   for(isub=0; isub<subbin_res; isub++){
+	  phase = (double)isub/(double)subbin_res/(double)nbins;
+	  for (uint64_t iibin=0; iibin<nbins; iibin++){
+		 ibin=(iibin+left)%nbins;
+		 true_phase=phase + (double)ibin/(double)nbins;
+		 if(true_phase >= 0.5)true_phase-=1.0;
+		 index = floor((1.0-true_phase)*subbin_res*nbins+0.5);
+		 index = index%(subbin_res*nbins);
+		 chisq_plot[index]=best_chisq;
+		 phase_plot[index]=0;
+		 if(iibin > right-left)continue;
+	  }
    }
    logmsg("Creating whitened profile");
    for (uint64_t iibin=0; iibin<nbins; iibin++){
@@ -241,7 +258,6 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
    }
    logmsg("Done creating whitened profile");
 
-   double true_phase;
    double best_phase=0;
    for (isub=0; isub<subbin_res; isub++){
 	  phase = (double)isub/(double)subbin_res/(double)nbins;
@@ -389,9 +405,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 	  free_uinv(cvm);
 	  free_uinv(covMatrix);
 	  free(outProf);
-	  free(phase_plot);
-	  free(chisq_plot);
-	  return kwikfit_doFit_INNER(nbins,profile,tmpl,2*subbin_res,best_profile,nitr-1,1,icount+1,(best_phase+bpp), error);
+	  return kwikfit_doFit_INNER(nbins,profile,tmpl,2*subbin_res,best_profile,nitr-1,1,icount+1,(best_phase+bpp), error,phase_plot,chisq_plot);
    } else {
 	  logmsg("Create output");
 	  kwikfit_result_t *result = (kwikfit_result_t*) calloc(sizeof(kwikfit_result_t),1);
@@ -423,7 +437,7 @@ kwikfit_result_t *kwikfit_doFit_INNER(const uint64_t nbins, double *profile, kwi
 
 kwikfit_result_t *kwikfit_doFit(const uint64_t nbins, double *profile, kwikfit_template_t *tmpl, const uint64_t nitr, const uint64_t subbin_res){
    double *best_profile=(double*)calloc(sizeof(double),nbins);
-   return kwikfit_doFit_INNER(nbins,profile,tmpl,subbin_res,best_profile,nitr,0,0,0,0);
+   return kwikfit_doFit_INNER(nbins,profile,tmpl,subbin_res,best_profile,nitr,0,0,0,0,NULL,NULL);
    free(best_profile);
 }
 

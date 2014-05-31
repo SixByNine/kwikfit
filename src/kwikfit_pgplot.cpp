@@ -81,6 +81,7 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    cpgopen(device);
    cpgsvp(0.08,0.95,0.09,0.6);
 
+   char txt[1024];
    double phases[nbins];
    for (i=0; i< nbins; i++){
 	  phases[i]=((double)i) /(double)(nbins)-0.5;
@@ -106,6 +107,22 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    cpgsci(2);
    kwikfit_rotate_array(result->residual,y,nbins,centre);
    kwikfit_draw_hist(nbins,phases,y);
+
+
+   cpgsci(1);
+   double ref=fabs(result->amplitudes[0]);
+   double dy = (max-min)/20;
+   for(i=0; i<result->tmpl->nprof; i++){
+	  sprintf(txt,"\\(2199) %s %.2f \\(2233) %.2f \\(2199)",result->tmpl->profs[i].name,result->amplitudes[i]/ref,result->amp_err[i]/ref);
+	  cpgsch(0.8);
+	  if(result->phase > 0){
+		 cpgptxt(-0.5,max-(i+1)*dy,0,0.0,txt);
+	  } else {
+		 cpgptxt(0.5,max-(i+1)*dy,0,1.0,txt);
+	  }
+	  cpgsch(1);
+   }
+
 
    cpgsci(1);
    double chisq_plot[result->nplot];
@@ -178,14 +195,13 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    kwikfit_rotate_array(result->chifit,chifit,result->nplot,centre);
    kwikfit_rotate_array(result->phase_plot,chiphase,result->nplot,centre);
    fflush(stdout);
-   char txt[88];
    sprintf(txt,"%.4f",result->phase);
    double ref_phase = atof(txt);
    for(i=0;i<result->nplot;i++){
 	  chisq_plot[i] = chisq_plot[i]/result->nfree;
 	  chifit[i] = chifit[i]/result->nfree;
 	  chiphase[i]= chiphase[i] - ref_phase;
-	  logmsg("%d %lf %lf %lf",i,chiphase[i],chisq_plot[i],chifit[i]);
+	  //logmsg("%d %lf %lf %lf",i,chiphase[i],chisq_plot[i],chifit[i]);
    }
    logmsg("find l/r");
    double l = -result->error*5;
@@ -217,6 +233,7 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    logmsg("Min: %lf, Max: %lf",min,max);
    logmsg("L: %lf, R: %lf",l,r);
 
+   cpgsls(1);
    cpgsci(1);
    cpgsvp(0.08,0.95,0.75,0.9);
    cpgswin(l,r,0,max);
@@ -232,13 +249,31 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    cpgsci(2);
    kwikfit_draw_line(result->nplot,chiphase,chisq_plot);
 
+   cpgsls(1);
+   cpgsch(0.25);
+   kwikfit_draw_points(result->nplot,chiphase,chisq_plot,22);
    cpgsls(2);
    cpgsci(3);
    kwikfit_draw_line(result->nplot,chiphase,chifit);
 
-   cpgsls(1);
-   cpgsci(2);
-   kwikfit_draw_points(result->nplot,chiphase,chisq_plot,4);
+   cpgsci(1);
+   sprintf(txt,"\\(2199) Chisq=%.3f dP=%.3g \\(2233) %.1g \\(2199)",
+		 result->chisq/(double)result->nfree,result->phase-ref_phase,
+		 result->error);
+   cpgsch(0.8);
+
+	  if(result->phase > 0){
+   cpgptxt(l,1,0,0.0,txt);
+	  } else {
+   cpgptxt(r,1,0,1.0,txt);
+	  }
+
+   cpgsch(1);
+
+   //cpgsci(4);
+   //cpgsch(1.5);
+   //cpgpt1(result->phase-ref_phase,result->chisq/(double)result->nfree,-5);
+   //cpgsch(1);
    cpgclos();
 
 }
