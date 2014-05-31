@@ -67,19 +67,33 @@ int main (int argc, char** argv){
 
 	  char tmp[88];
 	  fits_read_key(fp,TSTRING,"TBIN",tmp,NULL,&status);
-	  double tbin=atof(tmp);
+	  double tbin_alt=atof(tmp);
 
-	  if(tbin==0){
-		 if(fits_movnam_hdu(fp,BINARY_TBL,"HISTORY",1,&status)){
-			logerr("error moving to history table");
-		 }
-		 if(fits_get_colnum(fp,CASEINSEN,"TBIN",&colnum,&status)){
-			logerr("error getting tbin column");
-		 }
-		 if(fits_read_col_dbl(fp,colnum,1,1,1,0,&tbin,&initflag,&status)){
-			logerr("error reading tbin");
-		 }
+	  double tbin;
+	  if(fits_movnam_hdu(fp,BINARY_TBL,"HISTORY",1,&status)){
+		 logerr("error moving to history table");
 	  }
+	  fits_read_key(fp,TSTRING,"NAXIS2",tmp,NULL,&status);
+	  int nrow=atoi(tmp);
+
+	  double freq=hdr->phead.freq;
+
+	  status=0;
+	  if(fits_get_colnum(fp,CASEINSEN,"TBIN",&colnum,&status)){
+		 logerr("error getting tbin column");
+	  }
+	  if(fits_read_col_dbl(fp,colnum,nrow,1,1,tbin_alt,&tbin,&initflag,&status)){
+		 logerr("error reading tbin");
+	  }
+	  status=0;
+	  if(fits_get_colnum(fp,CASEINSEN,"CTR_FREQ",&colnum,&status)){
+		 logerr("error getting ctr_Freq column");
+	  }
+	  if(fits_read_col_dbl(fp,colnum,nrow,1,1,freq,&freq,&initflag,&status)){
+		 logerr("error reading ctr_Freq");
+	  }
+
+
 
 	  logmsg("status: %d initflag: %d",status,initflag);
 	  double min = TKfindMin_f(prof,nbins);
@@ -110,10 +124,9 @@ int main (int argc, char** argv){
 	  logmsg("period %lf" ,period);
 
 
-	  double freq=hdr->phead.freq;
 
-	  printf("%s 1400 \t %.16Lf \t %f 8\n",argv[ifile],ToA,result->error*period*1e6);
 	  fprintf(out," %s %.6lf \t %.16Lf \t %f 8 -alg KW",argv[ifile],freq,ToA,result->error*period*1e6);
+	  fprintf(stdout," %s %.6lf \t %.16Lf \t %f 8 -alg KW\t",argv[ifile],freq,ToA,result->error*period*1e6);
 	  double ref=result->amplitudes[0];
 	  for(uint64_t i=0; i<result->tmpl->nprof; i++){
 		 fprintf(out," -kw%s %.2f",result->tmpl->profs[i].name,result->amplitudes[i]/ref);

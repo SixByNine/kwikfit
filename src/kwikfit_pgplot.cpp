@@ -163,39 +163,54 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
 
    cpgsci(2);
    kwikfit_draw_line(result->nplot,chiphase,chisq_plot);
+   cpgsci(3);
+   cpgsls(2);
+   kwikfit_draw_line(result->nplot,chiphase,chifit);
+
 
 
 
    logmsg("top plot");
    max/=4;
+   centre=result->nplot/2;
    centre=0;
    kwikfit_rotate_array(result->chisq_plot,chisq_plot,result->nplot,centre);
    kwikfit_rotate_array(result->chifit,chifit,result->nplot,centre);
+   kwikfit_rotate_array(result->phase_plot,chiphase,result->nplot,centre);
    fflush(stdout);
+   char txt[88];
+   sprintf(txt,"%.4f",result->phase);
+   double ref_phase = atof(txt);
    for(i=0;i<result->nplot;i++){
 	  chisq_plot[i] = chisq_plot[i]/result->nfree;
 	  chifit[i] = chifit[i]/result->nfree;
-	  chiphase[i]= result->phase_plot[i] - result->phase;
+	  chiphase[i]= chiphase[i] - ref_phase;
+	  logmsg("%d %lf %lf %lf",i,chiphase[i],chisq_plot[i],chifit[i]);
    }
    logmsg("find l/r");
-   double l = -result->error;
-   double r = result->error;
+   double l = -result->error*5;
+   double r = result->error*5;
    /*for(i=0;i<result->nplot;i++){
-	  if(chisq_plot[i] < max){
-		 l=result->phase_plot[i];
-		 break;
-	  }
+	 if(chisq_plot[i] < max){
+	 l=result->phase_plot[i];
+	 break;
+	 }
+	 }
+	 for(i=result->nplot-1; i>=0;i--){
+	 if(chisq_plot[i] < max){
+	 r=result->phase_plot[i];
+	 break;
+	 }
+	 }
+
+	 if (r < -l)r=-l;
+	 else l=-r;
+	 */
+   if(r-l < 1e-3){
+	  r+=1e-3;
+	  l-=1e-3;
    }
-   for(i=result->nplot-1; i>=0;i--){
-	  if(chisq_plot[i] < max){
-		 r=result->phase_plot[i];
-		 break;
-	  }
-   }
-   
-   if (r < -l)r=-l;
-   else l=-r;
-   */
+
    if (r>0.5)r=0.5;
    if (l<-0.5)l=0.5;
 
@@ -205,18 +220,23 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    cpgsci(1);
    cpgsvp(0.08,0.95,0.75,0.9);
    cpgswin(l,r,0,max);
-   cpgbox("",0,0,"A",0,0);
+   //cpgbox("",0,0,"A",0,0);
    cpgbox("BCTSM",0,0,"BCTSN",0,0);
-   char txt[1024];
-   sprintf(txt,"Zoomed Phase (around %.3f)",result->phase);
+   sprintf(txt,"Zoomed Phase (around %.4f)",ref_phase);
    cpglab("","Chisq",txt);
+   cpgsls(2);
+   cpgmove(result->phase-ref_phase,max);
+   cpgdraw(result->phase-ref_phase,0);
+   cpgsls(1);
 
    cpgsci(2);
    kwikfit_draw_line(result->nplot,chiphase,chisq_plot);
 
-   cpgsci(4);
+   cpgsls(2);
+   cpgsci(3);
    kwikfit_draw_line(result->nplot,chiphase,chifit);
 
+   cpgsls(1);
    cpgsci(2);
    kwikfit_draw_points(result->nplot,chiphase,chisq_plot,4);
    cpgclos();
