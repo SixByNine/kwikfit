@@ -11,27 +11,6 @@
 #include "mjklog.h"
 #include "kwikfit.h"
 
-/*
- *
-   typedef struct kwikfit_result {
-	  double phase;
-	  double error;
-	  double chisq;
-	  double *phase_plot;
-	  double *chisq_plot;
-	  uint64_t nbins;
-	  uint64_t nfree;
-	  double *data;
-	  double *fit;
-	  double *residual;
-	  double *data_cov;
-	  kwikfit_template_t *tmpl;
-	  double *amplitudes;
-	  double *amp_err;
-	  double **amp_cvm;
-   } kwikfit_result_t;
-*/
-
 
 void kwikfit_draw_hist(const uint64_t nbins, double *x, double *data){
    uint64_t i;
@@ -87,26 +66,17 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
 	  phases[i]=((double)i) /(double)(nbins)-0.5;
    }
 
-   //   int64_t centre = ((int64_t)floor(result->phase * nbins + 0.5) + nbins/2)%nbins;
-   int64_t centre = -result->phase*nbins;
-   logmsg("phase %lf c %ld",result->phase,centre);
-
-   centre=0;
-   logmsg("Min: %lf, Max: %lf",min,max);
-   logmsg("Centre: %ld",centre);
+   logdbg("Min: %lf, Max: %lf",min,max);
    cpgswin(-0.5,0.5,min,max);
    cpgbox("C",0.1,10,"",0,0);
    cpgbox("ABTSN",0.1,10,"BCTSN",0,0);
    cpglab("Phase","Amplitude","");
    cpgsci(4);
-   kwikfit_rotate_array(result->data,y,nbins,centre);
-   kwikfit_draw_hist(nbins,phases,y);
+   kwikfit_draw_hist(nbins,phases,result->data);
    cpgsci(3);
-   kwikfit_rotate_array(result->fit,y,nbins,centre);
-   kwikfit_draw_hist(nbins,phases,y);
+   kwikfit_draw_hist(nbins,phases,result->fit);
    cpgsci(2);
-   kwikfit_rotate_array(result->residual,y,nbins,centre);
-   kwikfit_draw_hist(nbins,phases,y);
+   kwikfit_draw_hist(nbins,phases,result->residual);
 
 
    cpgsci(1);
@@ -129,7 +99,7 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    double chifit[result->nplot];
    double chiphase[result->nplot];
 
-   centre=0;
+   double centre=0;
    for(i=1;i<result->nplot;i++){
 	  if(result->phase_plot[i] < result->phase_plot[i-1]){
 		 centre=i-1;
@@ -139,7 +109,7 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    kwikfit_rotate_array(result->chisq_plot,chisq_plot,result->nplot,-centre);
    kwikfit_rotate_array(result->chifit,chifit,result->nplot,-centre);
    kwikfit_rotate_array(result->phase_plot,chiphase,result->nplot,-centre);
-   logmsg("ph %lf %lf ==> %lf %lf",result->phase_plot[0],result->phase_plot[result->nplot-1],chiphase[0],chiphase[result->nplot-1]);
+   logdbg("ph %lf %lf ==> %lf %lf",result->phase_plot[0],result->phase_plot[result->nplot-1],chiphase[0],chiphase[result->nplot-1]);
    for(i=0;i<result->nplot;i++){
 	  chisq_plot[i] = chisq_plot[i]/result->nfree;
 	  chifit[i] = chifit[i]/result->nfree;
@@ -152,16 +122,13 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    double cmax = TKfindMax_d(result->data_cov,nbins);
 
 
-   logmsg("Min: %lf, Max: %lf",min,max);
+   logdbg("Min: %lf, Max: %lf",min,max);
    cpgsvp(0.08,0.95,0.6,0.75);
    cpgswin(-0.5,0.5,0,max);
    cpgbox("C",0.1,10,"",0,0);
    cpgbox("BTS",0.1,10,"BCTSN",0,0);
    cpglab("","Chisq","");
 
-   /*for(i=0; i < result->nplot; i++){
-	 logmsg("%d %lg %lg",i,result->phase_plot[i],result->chisq_plot[i]);
-	 }*/
 
    for(i=0;i<nbins;i++){
 	  y[i]=max*(result->data_cov[i]-cmin)/(cmax-cmin);
@@ -187,23 +154,17 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
 
 
 
-   logmsg("top plot");
+   logdbg("top plot");
    max/=4;
-   centre=result->nplot/2;
-   centre=0;
-   kwikfit_rotate_array(result->chisq_plot,chisq_plot,result->nplot,centre);
-   kwikfit_rotate_array(result->chifit,chifit,result->nplot,centre);
-   kwikfit_rotate_array(result->phase_plot,chiphase,result->nplot,centre);
    fflush(stdout);
    sprintf(txt,"%.4f",result->phase);
    double ref_phase = atof(txt);
    for(i=0;i<result->nplot;i++){
-	  chisq_plot[i] = chisq_plot[i]/result->nfree;
-	  chifit[i] = chifit[i]/result->nfree;
-	  chiphase[i]= chiphase[i] - ref_phase;
-	  //logmsg("%d %lf %lf %lf",i,chiphase[i],chisq_plot[i],chifit[i]);
+	  chisq_plot[i] = result->chisq_plot[i]/result->nfree;
+	  chifit[i] = result->chifit[i]/result->nfree;
+	  chiphase[i]= result->phase_plot[i] - ref_phase;
    }
-   logmsg("find l/r");
+   logdbg("find l/r");
    double l = -result->error*5;
    double r = result->error*5;
    /*for(i=0;i<result->nplot;i++){
@@ -230,8 +191,8 @@ void kwikfit_plot_result(kwikfit_result_t* result, const char* device) {
    if (r>0.5)r=0.5;
    if (l<-0.5)l=0.5;
 
-   logmsg("Min: %lf, Max: %lf",min,max);
-   logmsg("L: %lf, R: %lf",l,r);
+   logdbg("Min: %lf, Max: %lf",min,max);
+   logdbg("L: %lf, R: %lf",l,r);
 
    cpgsls(1);
    cpgsci(1);

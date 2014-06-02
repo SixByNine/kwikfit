@@ -21,7 +21,7 @@ void closeFitsFile(fitsfile *fp)
   fits_report_error(stderr,status);
   if (status)
     {
-      printf("Error closing file\n");
+      fprintf(stderr,"Error closing file\n");
       exit(1);
     }
 
@@ -35,7 +35,7 @@ fitsfile * openFitsFile(char *fname)
   fits_report_error(stderr,status);
   if (status)
     {
-      printf("Error opening file >%s<\n",fname);
+      fprintf(stderr,"Error opening file >%s<\n",fname);
       exit(1);
     }
   return fp;
@@ -46,7 +46,7 @@ dSet * initialiseDset()
   dSet *data;
   if (!(data = (dSet *)malloc(sizeof(dSet))))
     {
-      printf("Unable to allocate enough memory to create a data set\n");
+      fprintf(stderr,"Unable to allocate enough memory to create a data set\n");
       exit(1);
     }
   data->pheaderSet = 0;
@@ -59,7 +59,7 @@ dSet * initialiseDset()
 
 void readPhead(dSet *data)
 {
-  printf("Reading header");
+  fprintf(stderr,"Reading header");
 }
 
 void freeDset(dSet *data)
@@ -136,7 +136,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status)
     {
-      printf("No subintegration table\n");
+      fprintf(stderr,"No subintegration table\n");
       data->subintTable=0;
       status=0;
     }
@@ -146,14 +146,14 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TINT,"NAXIS2",&(data->phead.nsub),NULL,&status);
       if (status)
 	{
-	  printf("Reading naxis2\n");
+	  fprintf(stderr,"Reading naxis2\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}     
       fits_read_key(fp,TINT,"NCHAN",&(data->phead.nchan),NULL,&status);
       if (status)
 	{
-	  printf("Reading nchan\n");
+	  fprintf(stderr,"Reading nchan\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}
@@ -161,7 +161,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TFLOAT,"ZERO_OFF",&(data->phead.zeroOff),NULL,&status);
       if (status)
 	{
-	  printf("Reading zero_off\n");
+	  fprintf(stderr,"Reading zero_off\n");
 	  fits_report_error(stderr,status);
 	  data->phead.zeroOff = 0;
 	  status=0;
@@ -170,7 +170,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TINT,"NBITS",&(data->phead.nbits),NULL,&status);
       if (status)
 	{
-	  printf("Reading nbits\n");
+	  fprintf(stderr,"Reading nbits\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}
@@ -178,7 +178,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TINT,"NPOL",&(data->phead.npol),NULL,&status);
       if (status)
 	{
-	  printf("Reading npol\n");
+	  fprintf(stderr,"Reading npol\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}
@@ -186,7 +186,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TINT,"NSBLK",&(data->phead.nsblk),NULL,&status);
       if (status)
 	{
-	  printf("Reading nsblk\n");
+	  fprintf(stderr,"Reading nsblk\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}
@@ -194,12 +194,12 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
       fits_read_key(fp,TINT,"NBIN",&(data->phead.nbin),NULL,&status);
       if (status)
 	{
-	  printf("Reading nbin\n");
+	  fprintf(stderr,"Reading nbin\n");
 	  fits_report_error(stderr,status);
 	  exit(1);
 	}
 
-      //      printf("nbin = %d (%d)\n",data->phead.nbin,status);
+      //      fprintf(stderr,"nbin = %d (%d)\n",data->phead.nbin,status);
       fits_read_key(fp,TFLOAT,"CHAN_BW",&(data->phead.chanbw),NULL,&status);
       if (data->phead.chanbw < 0 && data->phead.bw > 0)
 	data->phead.bw*=-1;
@@ -210,7 +210,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
   fits_movnam_hdu(fp,BINARY_TBL,"PSRPARAM",1,&status);
   if (status)
     {
-      printf("No PSRPARM table\n");
+      fprintf(stderr,"No PSRPARM table\n");
       data->psrparamTable=0;
       status=0;
     }
@@ -226,7 +226,7 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
 
       fits_get_colnum(fp,CASEINSEN,"PARAM",&colnum,&status);
       if (status) {
-	printf("Unable to find data in the psrparam table in FITS file\n");
+	fprintf(stderr,"Unable to find data in the psrparam table in FITS file\n");
 	exit(1);
       }
 
@@ -246,9 +246,9 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
 		  data->phead.period = 1.0/tt;
 		}
 	    }
-	  //	  printf("Read: %s\n",line[0]);
+	  //	  fprintf(stderr,"Read: %s\n",line[0]);
 	}
-      //      printf("Lenght = %d\n",len);
+      //      fprintf(stderr,"Lenght = %d\n",len);
   free(line[0]);
   free(line);
 
@@ -259,29 +259,29 @@ void loadPrimaryHeader(fitsfile *fp,dSet *data)
 void displayHeaderInfo(dSet *data)
 {
   if (data->pheaderSet == 0)
-    printf("No header information loaded\n");
+    fprintf(stderr,"No header information loaded\n");
   else
     {
-      printf("Source:                       %s\n",data->phead.source);
-      printf("Observation mode:             %s\n",data->phead.obsMode);
-      printf("Observation frequency:        %f\n",data->phead.freq);
-      printf("Integer start time (d):       %d\n",data->phead.imjd);
-      printf("Fractional start time (s):    %f\n",data->phead.smjd);
-      printf("Start time offset (s):        %f\n",data->phead.stt_offs);
-      printf("Observation bandwidth (MHz):  %f\n",data->phead.bw);
-      printf("Number of channels:           %d\n",data->phead.nchan);
-      printf("Number of subintegrations:    %d\n",data->phead.nsub);
-      printf("Number of bits:               %d\n",data->phead.nbits);
-      printf("Number of polarisations:      %d\n",data->phead.npol);
-      printf("Number of samples per subint: %d\n",data->phead.nsblk);
-      printf("Number of bins:               %d\n",data->phead.nbin);
-      printf("Channel bandwidth:            %f\n",data->phead.chanbw);
-      printf("Sample time:                  %f\n",data->phead.tsamp);
-      printf("Zero offset:                  %f\n",data->phead.zeroOff);
-      printf("Dispersion measure:           %f\n",data->phead.dm);
-      printf("Period:                       %f\n",data->phead.period);
-      printf("\n");
-      printf("Observation time (s):         %g\n",data->phead.nsub*data->phead.nsblk*data->phead.tsamp);
+      fprintf(stderr,"Source:                       %s\n",data->phead.source);
+      fprintf(stderr,"Observation mode:             %s\n",data->phead.obsMode);
+      fprintf(stderr,"Observation frequency:        %f\n",data->phead.freq);
+      fprintf(stderr,"Integer start time (d):       %d\n",data->phead.imjd);
+      fprintf(stderr,"Fractional start time (s):    %f\n",data->phead.smjd);
+      fprintf(stderr,"Start time offset (s):        %f\n",data->phead.stt_offs);
+      fprintf(stderr,"Observation bandwidth (MHz):  %f\n",data->phead.bw);
+      fprintf(stderr,"Number of channels:           %d\n",data->phead.nchan);
+      fprintf(stderr,"Number of subintegrations:    %d\n",data->phead.nsub);
+      fprintf(stderr,"Number of bits:               %d\n",data->phead.nbits);
+      fprintf(stderr,"Number of polarisations:      %d\n",data->phead.npol);
+      fprintf(stderr,"Number of samples per subint: %d\n",data->phead.nsblk);
+      fprintf(stderr,"Number of bins:               %d\n",data->phead.nbin);
+      fprintf(stderr,"Channel bandwidth:            %f\n",data->phead.chanbw);
+      fprintf(stderr,"Sample time:                  %f\n",data->phead.tsamp);
+      fprintf(stderr,"Zero offset:                  %f\n",data->phead.zeroOff);
+      fprintf(stderr,"Dispersion measure:           %f\n",data->phead.dm);
+      fprintf(stderr,"Period:                       %f\n",data->phead.period);
+      fprintf(stderr,"\n");
+      fprintf(stderr,"Observation time (s):         %g\n",data->phead.nsub*data->phead.nsblk*data->phead.tsamp);
     }
 }
 
@@ -307,7 +307,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 
 
   // get mean/RMS of off-pulse for scaling. no longer need OFFS/DAT_SCL
-  printf("sub0 = %d\n",sub0);
+  fprintf(stderr,"sub0 = %d\n",sub0);
   if (dm < 0)
     dm = data->phead.dm;
   
@@ -323,7 +323,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 
   fits_movnam_hdu(fp,BINARY_TBL,"BANDPASS",1,&status);
   if (status) {
-    printf("Unable to move to bandpass table in FITS file\n");
+    fprintf(stderr,"Unable to move to bandpass table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DAT_OFFS",&colnum,&status);  
@@ -341,13 +341,13 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 	bpass[i] = bpass[i]*bpass_scl[0] + bpass_offs[0];
       else
 	bpass[i] = bpass[i]*bpass_scl[1] + bpass_offs[1];
-      //      printf("bpass: %d %g %g %g %g %g \n",i,bpass[i],bpass_scl[0],bpass_scl[1],bpass_offs[0],bpass_offs[1]);
+      //      fprintf(stderr,"bpass: %d %g %g %g %g %g \n",i,bpass[i],bpass_scl[0],bpass_scl[1],bpass_offs[0],bpass_offs[1]);
     }
   //  exit(1);
 
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   // REMOVED: No longer need dat_scl or offs. OFFS/DAT_SCL
@@ -360,31 +360,31 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 //    }
 //  fits_get_colnum(fp,CASEINSEN,"DAT_OFFS",&colnum,&status);
 //  if (status) {
-//    printf("Unable to find DAT_OFFS in the subint table in FITS file\n");
+//    fprintf(stderr,"Unable to find DAT_OFFS in the subint table in FITS file\n");
 //    exit(1);
 //  }
 //  for (i=0;i<data->phead.nsub;i++)
 //    {
 //      fits_read_col_flt(fp,colnum,i+1,1,data->phead.nchan*data->phead.npol,nval,offs[i],&initflag,&status);
-//      //      printf("offs = %g\n",offs[i][5]);
+//      //      fprintf(stderr,"offs = %g\n",offs[i][5]);
 //      //      offs[i] =0;
 //    }
 //
 //  fits_get_colnum(fp,CASEINSEN,"DAT_SCL",&colnum,&status);
 //  if (status) {
-//    printf("Unable to find DAT_SCL in the subint table in FITS file\n");
+//    fprintf(stderr,"Unable to find DAT_SCL in the subint table in FITS file\n");
 //    exit(1);
 //  }
 //  for (i=0;i<data->phead.nsub;i++)
 //    {
 //      fits_read_col_flt(fp,colnum,i+1,1,data->phead.nchan*data->phead.npol,nval,dat_scl[i],&initflag,&status);
-//      //      printf("dat_scl = %g\n",dat_scl[i][5]);
+//      //      fprintf(stderr,"dat_scl = %g\n",dat_scl[i][5]);
 //      //            dat_scl[i]=1.0;
 //    }
 
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   if (sub0==0)
@@ -395,9 +395,9 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 	  fy[i] = 0;
 	}
       //
-      printf("Loading %d subintegrations\n",data->phead.nsub);
-      printf("Number of frequency channels = %d\n",data->phead.nchan);
-      printf("Number of polarisations = %d\n",data->phead.npol);
+      fprintf(stderr,"Loading %d subintegrations\n",data->phead.nsub);
+      fprintf(stderr,"Number of frequency channels = %d\n",data->phead.nchan);
+      fprintf(stderr,"Number of polarisations = %d\n",data->phead.npol);
       for (i=0;i<data->phead.nchan*data->phead.nbin;i++)
 	freq_y[i] = 0;
     }
@@ -420,7 +420,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 	      tdelay = 4.15e-3*dm*(pow(f0/1000.0,-2)-pow((f0+(chanbw*i-chanbw*data->phead.nchan/2.0))/1000.0,-2));
 	      cdelay = nint(-tdelay/bintime);
 	      //	      if (l==0 && j==0)
-	      //		printf("Have %g %g %g %d %d\n",dm,f0,f0+chanbw*i,i,cdelay);
+	      //		fprintf(stderr,"Have %g %g %g %d %d\n",dm,f0,f0+chanbw*i,i,cdelay);
 	      fits_read_col_flt(fp,colnum,l+1,j*(data->phead.nchan*data->phead.nbin)+i*data->phead.nbin+1,data->phead.nbin,nval,ty,&initflag,&status);
 	      meanVal=0;
 	      //for (k=0;k<data->phead.nbin;k++)
@@ -440,11 +440,11 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 
 	      getbaseline(ty,data->phead.nbin,0.35,&meanVal,&rmsVal);
 	      if (rmsVal == 0.0 ) rmsVal=1.0;
-	      //	      printf("Val = %g\n",ty[10]);
+	      //	      fprintf(stderr,"Val = %g\n",ty[10]);
 	      for (k=0;k<data->phead.nbin;k++)
 		{
 		  //		  if (i==10 && l==10)
-		  //		    printf("Orig value = %g\n",ty[k]);
+		  //		    fprintf(stderr,"Orig value = %g\n",ty[k]);
 
 		  //ty[k] = ((ty[k]+offs[l][j*data->phead.nchan+i])*dat_scl[l][j*data->phead.nchan+i]); //+offs[l][j*data->phead.nchan+i]);
 		  ty[k] -= meanVal;
@@ -460,7 +460,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 		      } */
 		  //		  if (l==10)
 		      
-		  //		    printf("New value = %g\n",ty[k]);
+		  //		    fprintf(stderr,"New value = %g\n",ty[k]);
 		  bn = k-cdelay + addDelay;
 		  //		  bn = nint(fmod(k-tdelay/bintime,data->phead.nbin));
 		  while (bn >= data->phead.nbin)
@@ -469,7 +469,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
 		    bn += data->phead.nbin;
 		  freq_y[i*data->phead.nbin+k]+=(ty[k]); ///(float)(data->phead.npol*data->phead.nsub));
 		  time_y[l*data->phead.nbin+bn]+=(ty[k]);///(float)(data->phead.npol*data->phead.nchan));
-		  //		  printf("timey = %g\n",time_y[l*data->phead.nbin+bn]);
+		  //		  fprintf(stderr,"timey = %g\n",time_y[l*data->phead.nbin+bn]);
 		  fy[bn]+=(ty[k]/(float)(data->phead.nchan*data->phead.npol*data->phead.nsub));
 		}
 	    }
@@ -484,7 +484,7 @@ int extractFoldData(fitsfile *fp,dSet *data,float dm,float *fx,float *fy,float *
   //  }
   //free(offs);
   //free(dat_scl);*/
-  printf("Status = %d\n",status);
+  fprintf(stderr,"Status = %d\n",status);
 }
 
 int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
@@ -509,11 +509,11 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
   int t=0;
   float tempVal;
   long pos=0,p,cc=0;
-  printf("Have t1/t2 %g %g %g\n",t1,t2,(double)data->phead.tsamp);
+  fprintf(stderr,"Have t1/t2 %g %g %g\n",t1,t2,(double)data->phead.tsamp);
   s1 = (long)(t1/data->phead.tsamp);
   s2 = (long)(t2/data->phead.tsamp);
-  printf("samples per byte = %d\n",samplesperbyte);
-  printf("Searching for %ld %ld %ld\n",s1,s2,s2-s1);
+  fprintf(stderr,"samples per byte = %d\n",samplesperbyte);
+  fprintf(stderr,"Searching for %ld %ld %ld\n",s1,s2,s2-s1);
 
   nsblk = data->phead.nsblk;
   if (s1 < 0) s1=0;
@@ -522,24 +522,24 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
   if (sub_1 < 0) sub_1=0;
 
 
-  printf("Have samples (%d,%d) (%d,%d)\n",sub_1,samp_1,sub_2,samp_2);
+  fprintf(stderr,"Have samples (%d,%d) (%d,%d)\n",sub_1,samp_1,sub_2,samp_2);
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   cval = (unsigned char *)malloc(sizeof(unsigned char)*nsblk*nchan/samplesperbyte*npol);
-  //  printf("Allocated memory\n");
+  //  fprintf(stderr,"Allocated memory\n");
   t=0;
-  printf("Have sub1/2 = %g %g\n",(double)sub_1,(double)sub_2);
+  fprintf(stderr,"Have sub1/2 = %g %g\n",(double)sub_1,(double)sub_2);
   for (s=sub_1;s<=sub_2;s++)
     {
-      //            printf("Loading sub: %d\n",s);
+      //            fprintf(stderr,"Loading sub: %d\n",s);
       if (s==sub_1)
 	r1 = samp_1;
       else
@@ -548,7 +548,7 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
 	r2 = samp_2;
       else
 	r2 = nsblk;
-      printf("Reading from %d to %d for subint %d\n",r1,r2,s);
+      fprintf(stderr,"Reading from %d to %d for subint %d\n",r1,r2,s);
 
       // Read nchan data points
       for (sa=r1;sa<r2;sa++)
@@ -564,16 +564,16 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
 	  //	  val[count] = 0.0;
 	  for (i=0;i<nchan;i++)
 	    {
-	      //	      printf("Here with %g\n",(float)chVals[i]);
+	      //	      fprintf(stderr,"Here with %g\n",(float)chVals[i]);
 	      	      p = cc+(s2-s1)*i;
-	      //	      printf("pos-p = %d\n",p);
+	      //	      fprintf(stderr,"pos-p = %d\n",p);
 	      //	      	      p=pos;
 	      if (samplesperbyte==8)
 		{
 		  if (chVals[i]==0) arr[p] = 0.5;
 		  else arr[p] = -0.5;
 
-		  // printf("%d %f %d %d\n",chVals[i],arr[p],p,i);
+		  // fprintf(stderr,"%d %f %d %d\n",chVals[i],arr[p],p,i);
 		}
 	      else if (samplesperbyte==4)
 		{
@@ -585,7 +585,7 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
 	      else
 		{
 		  arr[p] = chVals[i];
-		  //		  printf("Have got %g\n",arr[p]);
+		  //		  fprintf(stderr,"Have got %g\n",arr[p]);
 		}
 	      //	      if (chVals[i]==0) arr[pos] = 0.5;
 	      //	      else arr[pos] =- 0.5;
@@ -597,7 +597,7 @@ int extractPolData(fitsfile *fp,dSet *data,int pol,float *arr,float t1,float t2)
 	  //	  pos++;
 	}
     }
-    printf("Complete %d %d %d\n",pos,s2-s1,nchan);
+    fprintf(stderr,"Complete %d %d %d\n",pos,s2-s1,nchan);
   free(cval);
     return cc;
     //return pos;
@@ -628,37 +628,37 @@ int extractDataZeroDM(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float 
   int t=0;
   float tempVal;
 
-  printf("Extract zeroDM smaplesperbyte = %d\n",samplesperbyte);
+  fprintf(stderr,"Extract zeroDM smaplesperbyte = %d\n",samplesperbyte);
   // Do we require smoothing?
   if (s2 - s1 > maxVal)
     {
       smoothSamp = ceil((double)(s2-s1)/(double)maxVal);
-      //      printf("smoothSamp = %d\n",smoothSamp);
+      //      fprintf(stderr,"smoothSamp = %d\n",smoothSamp);
     }
 
   nsblk = data->phead.nsblk;
 
   findPosSample(data,s1,&sub_1,&samp_1);
   findPosSample(data,s2,&sub_2,&samp_2);
-  //  printf("Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
+  //  fprintf(stderr,"Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
   // Go to the subint table
 
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   cval = (unsigned char *)malloc(sizeof(unsigned char)*nsblk*nchan/samplesperbyte*npol);
-  //  printf("Allocated memory\n");
+  //  fprintf(stderr,"Allocated memory\n");
   t=0;
   for (s=sub_1;s<=sub_2;s++)
     {
-      //      printf("Loading sub: %d\n",s);
+      //      fprintf(stderr,"Loading sub: %d\n",s);
       if (s==sub_1)
 	r1 = samp_1;
       else
@@ -667,7 +667,7 @@ int extractDataZeroDM(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float 
 	r2 = samp_2;
       else
 	r2 = nsblk;
-      //      printf("Reading from %d to %d\n",r1,r2);
+      //      fprintf(stderr,"Reading from %d to %d\n",r1,r2);
 
       // Read nchan data points
       for (sa=r1;sa<r2;sa++)
@@ -687,7 +687,7 @@ int extractDataZeroDM(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float 
 		{
 		  if (chVals[i]==0) tempVal += 0.5;
 		  else tempVal -= 0.5;
-		  //		  printf("Adding %d %d %d %d\n",s,sa,i,chVals[i]);
+		  //		  fprintf(stderr,"Adding %d %d %d %d\n",s,sa,i,chVals[i]);
 
 		}
 	      else
@@ -717,18 +717,18 @@ int extractDataZeroDM(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float 
 	    }
 	}
     }
-  //  printf("Complete %d %d\n",t,count);
+  //  fprintf(stderr,"Complete %d %d\n",t,count);
   free(cval);
   *nsmooth = smoothSamp;
   if (count > maxVal)
     {
-      printf("In pfits.c -- this should not have happened\n");
-      printf("count = %d, maxVal = %d\n",(int)count,(int)maxVal);
-      printf("s2-s1 = %d\n",(int)(s2-s1));
-      printf("Exit ...\n");
+      fprintf(stderr,"In pfits.c -- this should not have happened\n");
+      fprintf(stderr,"count = %d, maxVal = %d\n",(int)count,(int)maxVal);
+      fprintf(stderr,"s2-s1 = %d\n",(int)(s2-s1));
+      fprintf(stderr,"Exit ...\n");
       exit(1);
     }
-  //  printf("Returning\n");
+  //  fprintf(stderr,"Returning\n");
   return count;
 }
 
@@ -776,28 +776,28 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
   nchanbyte = nchan/samplesperbyte;
 
   // Do we require smoothing?
-  printf("At here: smoothSamp = %d\n",smoothSamp);
+  fprintf(stderr,"At here: smoothSamp = %d\n",smoothSamp);
   if (s2 - s1 > maxVal)
     {
       smoothSamp = ceil((double)(s2-s1)/(double)maxVal);
-      printf("aaa: smoothSamp = %d\n",smoothSamp);
+      fprintf(stderr,"aaa: smoothSamp = %d\n",smoothSamp);
     }
-  printf("2 At here: smoothSamp = %d\n",smoothSamp);
+  fprintf(stderr,"2 At here: smoothSamp = %d\n",smoothSamp);
   nsblk = data->phead.nsblk;
 
   findPosSample(data,s1,&sub_1,&samp_1);
   findPosSample(data,s2,&sub_2,&samp_2);
-  //  printf("Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
+  //  fprintf(stderr,"Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
   // Go to the subint table
 
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   // Number of extra samples required to process 
@@ -805,11 +805,11 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
   tDM = fabs(4.15e-3*dm*(pow((f0)/1000.0,-2)-pow((f0-fabs(bw))/1000.0,-2)));
   nsampDM = ceil(tDM/data->phead.tsamp);
 
-  printf("Here with tDM = %g %d %d\n",tDM,nsampDM,smoothSamp);
+  fprintf(stderr,"Here with tDM = %g %d %d\n",tDM,nsampDM,smoothSamp);
 
   cval = (unsigned char *)malloc(sizeof(unsigned char)*nchanbyte*npol*nsampDM);
 
-  printf("Trying to allocate memory\n");
+  fprintf(stderr,"Trying to allocate memory\n");
   cde_byte = (unsigned int **)malloc(sizeof(unsigned int *)*nsampDM);
   cde_bit  = (unsigned char **)malloc(sizeof(unsigned char *)*nsampDM);
 
@@ -818,7 +818,7 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
       cde_byte[i] = (unsigned int *)malloc(sizeof(unsigned int)*nchan*npol*nsampDM);
       cde_bit[i] = (unsigned char *)malloc(sizeof(unsigned char)*nchan*npol*nsampDM);
     }
-  printf("Allocated memory\n");
+  fprintf(stderr,"Allocated memory\n");
 
   // Now turn on the bits that correspond to the DM
   j=0;
@@ -826,7 +826,7 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
     {
       tdelay = 4.15e-3*dm*(pow(f0/1000.0,-2)-pow((f0-fabs(chanbw)*i)/1000.0,-2));
       cdelay = nint(-tdelay/data->phead.tsamp);
-      //      printf("Have %g %d\n",tdelay,cdelay);
+      //      fprintf(stderr,"Have %g %d\n",tdelay,cdelay);
       for (j=0;j<nsampDM;j++)
 	{
 	  k = (int)((float)i/(float)samplesperbyte)+cdelay*nchanbyte+j*nchan/samplesperbyte;
@@ -834,7 +834,7 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
 	    k-=nsampDM*nchanbyte;
 	  if (k>(nsampDM)*nchanbyte)
 	    {
-	      printf("ERROR\n");
+	      fprintf(stderr,"ERROR\n");
 	      exit(1);
 	    }
 	  cde_byte[j][i] = k;
@@ -842,12 +842,12 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
 	}
     }
 
- printf("Ready\n");
+ fprintf(stderr,"Ready\n");
 
   ring_s   = cval;
   ring_pos = cval;
   ring_e   = &cval[nchanbyte*npol*(nsampDM)];
-     printf("Got here 2\n");
+     fprintf(stderr,"Got here 2\n");
   // Should check if I'm running off the end of a subint
   s = sub_1;
   sa = samp_1;
@@ -856,10 +856,10 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
   count = 0;
   t=0;
   pos = 0;
-  printf("Got here 3\n");
+  fprintf(stderr,"Got here 3\n");
   for (i=0;i<s2-s1-nsampDM;i++)
     {
-      //            printf("i = %d, s = %d, sa = %d\n",i,s,sa);
+      //            fprintf(stderr,"i = %d, s = %d, sa = %d\n",i,s,sa);
       fits_read_col_byt(fp,colnum,s+1,(sa)*nchanbyte+1,nchanbyte,nval,ring_pos,&initflag,&status);
       sa++;
       
@@ -900,20 +900,20 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
       ring_pos += nchanbyte*npol;
       if (ring_pos == ring_e)
 	{
-	  //	  printf("Got to end of ring buffer %d %d\n",i,nsampDM);
+	  //	  fprintf(stderr,"Got to end of ring buffer %d %d\n",i,nsampDM);
 	  ring_pos = ring_s;
 	  t=0;
 	} 
       if (sa == nsblk)
 	{
-	  //	  printf("Running off the end of a block\n");
+	  //	  fprintf(stderr,"Running off the end of a block\n");
 	  s++;
 	  sa = 0;
 	} 
     }
   
   tempVal=0;
-  //  printf("Got here\n");
+  //  fprintf(stderr,"Got here\n");
   //  exit(1);
   if (status)
     {
@@ -922,7 +922,7 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
     }
 
 
-  //  printf("Complete %d %d\n",t,count);
+  //  fprintf(stderr,"Complete %d %d\n",t,count);
   free(cval);
   for (i=0;i<nsampDM;i++)
     {
@@ -935,13 +935,13 @@ int extractData(fitsfile *fp,dSet *data,long s1,long s2,float *mean,float *min,f
   *nsmooth = smoothSamp;
   if (count > maxVal)
     {
-      printf("In pfits.c -- this should not have happened\n");
-      printf("count = %d, maxVal = %d\n",(int)count,(int)maxVal);
-      printf("s2-s1 = %d\n",(int)(s2-s1));
-      printf("Exit ...\n");
+      fprintf(stderr,"In pfits.c -- this should not have happened\n");
+      fprintf(stderr,"count = %d, maxVal = %d\n",(int)count,(int)maxVal);
+      fprintf(stderr,"s2-s1 = %d\n",(int)(s2-s1));
+      fprintf(stderr,"Exit ...\n");
       exit(1);
     }
-  //  printf("Returning\n");
+  //  fprintf(stderr,"Returning\n");
   return count;
 }
 
@@ -990,22 +990,22 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   nchanbyte = nchan/samplesperbyte;
 
   // Do we require smoothing?
-  printf("At here: smoothSamp = %d\n",smoothSamp);
+  fprintf(stderr,"At here: smoothSamp = %d\n",smoothSamp);
   nsblk = data->phead.nsblk;
 
   findPosSample(data,s1,&sub_1,&samp_1);
   findPosSample(data,s2,&sub_2,&samp_2);
-  //  printf("Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
+  //  fprintf(stderr,"Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
   // Go to the subint table
 
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   // Number of extra samples required to process 
@@ -1016,7 +1016,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 
   cval = (unsigned char *)malloc(sizeof(unsigned char)*nchanbyte*npol*nsampDM);
 
-  printf("Trying to allocate memory\n");
+  fprintf(stderr,"Trying to allocate memory\n");
   cde_byte = (unsigned int **)malloc(sizeof(unsigned int *)*nsampDM);
   cde_bit  = (unsigned char **)malloc(sizeof(unsigned char *)*nsampDM);
 
@@ -1025,7 +1025,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
       cde_byte[i] = (unsigned int *)malloc(sizeof(unsigned int)*nchan*npol*nsampDM);
       cde_bit[i] = (unsigned char *)malloc(sizeof(unsigned char)*nchan*npol*nsampDM);
     }
-  printf("Allocated memory\n");
+  fprintf(stderr,"Allocated memory\n");
 
   // Now turn on the bits that correspond to the DM
   j=0;
@@ -1033,7 +1033,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
     {
       tdelay = 4.15e-3*dm*(pow(f0/1000.0,-2)-pow((f0-fabs(chanbw)*i)/1000.0,-2));
       cdelay = nint(-tdelay/data->phead.tsamp);
-      //      printf("Have %g %d\n",tdelay,cdelay);
+      //      fprintf(stderr,"Have %g %d\n",tdelay,cdelay);
       for (j=0;j<nsampDM;j++)
 	{
 	  k = (int)((float)i/(float)samplesperbyte)+cdelay*nchanbyte+j*nchan/samplesperbyte;
@@ -1041,7 +1041,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 	    k-=nsampDM*nchanbyte;
 	  if (k>(nsampDM)*nchanbyte)
 	    {
-	      printf("ERROR\n");
+	      fprintf(stderr,"ERROR\n");
 	      exit(1);
 	    }
 	  cde_byte[j][i] = k;
@@ -1049,12 +1049,12 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 	}
     }
 
- printf("Ready\n");
+ fprintf(stderr,"Ready\n");
 
   ring_s   = cval;
   ring_pos = cval;
   ring_e   = &cval[nchanbyte*npol*(nsampDM)];
-     printf("Got here 2\n");
+     fprintf(stderr,"Got here 2\n");
   // Should check if I'm running off the end of a subint
   s = sub_1;
   sa = samp_1;
@@ -1063,11 +1063,11 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   count = 0;
   t=0;
   pos = 0;
-  printf("Got here 3\n");
-  fprintf(fout,"# %s %d %g %g\n",data->phead.source,data->phead.imjd,data->phead.freq,data->phead.tsamp);
+  fprintf(stderr,"Got here 3\n");
+  ffprintf(stderr,fout,"# %s %d %g %g\n",data->phead.source,data->phead.imjd,data->phead.freq,data->phead.tsamp);
   for (i=0;i<s2-s1-nsampDM;i++)
     {
-      //            printf("i = %d, s = %d, sa = %d\n",i,s,sa);
+      //            fprintf(stderr,"i = %d, s = %d, sa = %d\n",i,s,sa);
       fits_read_col_byt(fp,colnum,s+1,(sa)*nchanbyte+1,nchanbyte,nval,ring_pos,&initflag,&status);
       sa++;
       
@@ -1085,27 +1085,27 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 		  //	      bitCount+=cde_byte[t][j]+cde_bit[t][j];
 		}
 	    }
-	    fprintf(fout,"%d\n",bitCount);
+	    ffprintf(stderr,fout,"%d\n",bitCount);
 	    t++;
 	}
       
       ring_pos += nchanbyte*npol;
       if (ring_pos == ring_e)
 	{
-	  //	  printf("Got to end of ring buffer %d %d\n",i,nsampDM);
+	  //	  fprintf(stderr,"Got to end of ring buffer %d %d\n",i,nsampDM);
 	  ring_pos = ring_s;
 	  t=0;
 	} 
       if (sa == nsblk)
  	{
- 	  //	  printf("Running off the end of a block\n");
+ 	  //	  fprintf(stderr,"Running off the end of a block\n");
  	  s++;
  	  sa = 0;
  	} 
      }
   
   tempVal=0;
-  //  printf("Got here\n");
+  //  fprintf(stderr,"Got here\n");
   //  exit(1);
   if (status)
     {
@@ -1114,7 +1114,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
     }
   
   
-  //  printf("Complete %d %d\n",t,count);
+  //  fprintf(stderr,"Complete %d %d\n",t,count);
   free(cval);
    for (i=0;i<nsampDM;i++)
      {
@@ -1176,28 +1176,28 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   nchanbyte = nchan/samplesperbyte;
 
   // Do we require smoothing?
-  printf("At here: smoothSamp = %d\n",smoothSamp);
+  fprintf(stderr,"At here: smoothSamp = %d\n",smoothSamp);
   if (s2 - s1 > maxVal)
     {
       smoothSamp = ceil((double)(s2-s1)/(double)maxVal);
-      printf("aaa: smoothSamp = %d\n",smoothSamp);
+      fprintf(stderr,"aaa: smoothSamp = %d\n",smoothSamp);
     }
-  printf("2 At here: smoothSamp = %d\n",smoothSamp);
+  fprintf(stderr,"2 At here: smoothSamp = %d\n",smoothSamp);
   nsblk = data->phead.nsblk;
 
   findPosSample(data,s1,&sub_1,&samp_1);
   findPosSample(data,s2,&sub_2,&samp_2);
-  printf("Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
+  fprintf(stderr,"Here with %d %d %d %d\n",sub_1,samp_1,sub_2,samp_2);
   // Go to the subint table
 
   fits_movnam_hdu(fp,BINARY_TBL,"SUBINT",1,&status);
   if (status) {
-    printf("Unable to move to subint table in FITS file\n");
+    fprintf(stderr,"Unable to move to subint table in FITS file\n");
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DATA",&colnum,&status);
   if (status) {
-    printf("Unable to find data in the subint table in FITS file\n");
+    fprintf(stderr,"Unable to find data in the subint table in FITS file\n");
     exit(1);
   }
   // Number of extra samples required to process 
@@ -1205,11 +1205,11 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   tDM = fabs(4.15e-3*dm*(pow((f0)/1000.0,-2)-pow((f0-fabs(bw))/1000.0,-2)));
   nsampDM = ceil(tDM/data->phead.tsamp);
 
-  printf("Here with tDM = %g %d %d\n",tDM,nsampDM,smoothSamp);
+  fprintf(stderr,"Here with tDM = %g %d %d\n",tDM,nsampDM,smoothSamp);
 
   cval = (unsigned char *)malloc(sizeof(unsigned char)*nchanbyte*npol*nsampDM);
 
-  printf("Trying to allocate memory\n");
+  fprintf(stderr,"Trying to allocate memory\n");
   cde_byte = (unsigned int **)malloc(sizeof(unsigned int *)*nsampDM);
   cde_bit  = (unsigned char **)malloc(sizeof(unsigned char *)*nsampDM);
 
@@ -1218,7 +1218,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
       cde_byte[i] = (unsigned int *)malloc(sizeof(unsigned int)*nchan*npol*nsampDM);
       cde_bit[i] = (unsigned char *)malloc(sizeof(unsigned char)*nchan*npol*nsampDM);
     }
-  printf("Allocated memory\n");
+  fprintf(stderr,"Allocated memory\n");
 
   // Now turn on the bits that correspond to the DM
   j=0;
@@ -1226,7 +1226,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
     {
       tdelay = 4.15e-3*dm*(pow(f0/1000.0,-2)-pow((f0-fabs(chanbw)*i)/1000.0,-2));
       cdelay = nint(-tdelay/data->phead.tsamp);
-      //      printf("Have %g %d\n",tdelay,cdelay);
+      //      fprintf(stderr,"Have %g %d\n",tdelay,cdelay);
       for (j=0;j<nsampDM;j++)
 	{
 	  k = (int)((float)i/(float)samplesperbyte)+cdelay*nchanbyte+j*nchan/samplesperbyte;
@@ -1234,7 +1234,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 	    k-=nsampDM*nchanbyte;
 	  if (k>(nsampDM)*nchanbyte)
 	    {
-	      printf("ERROR\n");
+	      fprintf(stderr,"ERROR\n");
 	      exit(1);
 	    }
 	  cde_byte[j][i] = k;
@@ -1242,11 +1242,11 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
 	}
     }
 
- printf("Ready\n");
+ fprintf(stderr,"Ready\n");
   ring_s   = cval;
   ring_pos = cval;
   ring_e   = &cval[nchanbyte*npol*(nsampDM)];
-     printf("Got here 2\n");
+     fprintf(stderr,"Got here 2\n");
   // Should check if I'm running off the end of a subint
   s = sub_1;
   sa = samp_1;
@@ -1255,10 +1255,10 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   count = 0;
   t=0;
   pos = 0;
-  printf("Got here 3\n");
+  fprintf(stderr,"Got here 3\n");
   for (i=0;i<s2-s1-nsampDM;i++)
     {
-      //            printf("i = %d, s = %d, sa = %d\n",i,s,sa);
+      //            fprintf(stderr,"i = %d, s = %d, sa = %d\n",i,s,sa);
       fits_read_col_byt(fp,colnum,s+1,(sa)*nchanbyte+1,nchanbyte,nval,ring_pos,&initflag,&status);
       sa++;
       
@@ -1292,20 +1292,20 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
       ring_pos += nchanbyte*npol;
       if (ring_pos == ring_e)
 	{
-	  //	  printf("Got to end of ring buffer %d %d\n",i,nsampDM);
+	  //	  fprintf(stderr,"Got to end of ring buffer %d %d\n",i,nsampDM);
 	  ring_pos = ring_s;
 	  t=0;
 	} 
       if (sa == nsblk)
 	{
-	  //	  printf("Running off the end of a block\n");
+	  //	  fprintf(stderr,"Running off the end of a block\n");
 	  s++;
 	  sa = 0;
 	} 
     }
   
   tempVal=0;
-  //  printf("Got here\n");
+  //  fprintf(stderr,"Got here\n");
   //  exit(1);
   if (status)
     {
@@ -1314,7 +1314,7 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
     }
 
 
-  //  printf("Complete %d %d\n",t,count);
+  //  fprintf(stderr,"Complete %d %d\n",t,count);
   free(cval);
   for (i=0;i<nsampDM;i++)
     {
@@ -1327,13 +1327,13 @@ int writeData(fitsfile *fp,FILE *fout,dSet *data,long s1,long s2,float dm)
   *nsmooth = smoothSamp;
   if (count > maxVal)
     {
-      printf("In pfits.c -- this should not have happened\n");
-      printf("count = %d, maxVal = %d\n",count,maxVal);
-      printf("s2-s1 = %d\n",s2-s1);
-      printf("Exit ...\n");
+      fprintf(stderr,"In pfits.c -- this should not have happened\n");
+      fprintf(stderr,"count = %d, maxVal = %d\n",count,maxVal);
+      fprintf(stderr,"s2-s1 = %d\n",s2-s1);
+      fprintf(stderr,"Exit ...\n");
       exit(1);
     }
-  //  printf("Returning\n");
+  //  fprintf(stderr,"Returning\n");
   return count;
 } */
 
@@ -1345,7 +1345,7 @@ void findPosSample(dSet *data,long s,long *sub,long *samp)
 
   nsblk = data->phead.nsblk;
   
-  printf("Searching for sample %d\n",(int)s);
+  fprintf(stderr,"Searching for sample %d\n",(int)s);
   
   *sub  = floor((double)s/(double)nsblk);
   *samp = s-*sub*nsblk;
@@ -1375,21 +1375,21 @@ int readBandpass(fitsfile *fp,float *bpass)
   // Go to bandpass table
   fits_movnam_hdu(fp,BINARY_TBL,"BANDPASS",1,&status);
   if (status) {
-    printf("Unable to move to bandpass table in FITS file\n");
+    fprintf(stderr,"Unable to move to bandpass table in FITS file\n");
     exit(1);
   }
 
   fits_get_colnum(fp,CASEINSEN,"DAT_OFFS",&colnum,&status);
   fits_read_col(fp,TFLOAT,colnum,1,1,1,&nval,&dat_offs,&anynul,&status);
   if (status){
-    printf("Error in bandpass header 1\n");
+    fprintf(stderr,"Error in bandpass header 1\n");
     fits_report_error(stderr,status);
     exit(1);
   }
   fits_get_colnum(fp,CASEINSEN,"DAT_SCL",&colnum,&status);
   fits_read_col(fp,TFLOAT,colnum,1,1,1,&nval,&dat_scl,&anynul,&status);
   if (status){
-    printf("Error in bandpass header\n");
+    fprintf(stderr,"Error in bandpass header\n");
     fits_report_error(stderr,status);
     exit(1);
     }
@@ -1401,7 +1401,7 @@ int readBandpass(fitsfile *fp,float *bpass)
   }
   fits_get_coltype(fp,colnum,&typecode,&repeat,&width,&status);
   nchan = (int)repeat-1; // Don't read the first channel
-  printf("nc = %d, na = %d\n",(int)nchan,(int)naxis);
+  fprintf(stderr,"nc = %d, na = %d\n",(int)nchan,(int)naxis);
   for (i=1;i<(int)nchan;i++)
     {
       fits_read_col(fp,TFLOAT,colnum,1,i+1,1,&nval,&val,&anynul,&status);
@@ -1444,12 +1444,12 @@ void bytesToValues(int samplesperbyte, int nchan, unsigned char *val2,
 	  pointer = oneBit;
 	  break;
 	}
-      //      printf("i = %d; Here with index = %d, val2 = %d\n",i,index,val2[i]);
+      //      fprintf(stderr,"i = %d; Here with index = %d, val2 = %d\n",i,index,val2[i]);
       pointer(val2[i], values, &index);
     }
   //  for (i=0;i<nchan;i++)
-  //    printf("vals = %g\n",(float)values[i]);
-  //  printf("Finsihed\n");
+  //    fprintf(stderr,"vals = %g\n",(float)values[i]);
+  //  fprintf(stderr,"Finsihed\n");
 }
 
 void eightBits(int eight_bit_number, unsigned char *results, int *index)
@@ -1515,7 +1515,7 @@ void twoBits(int eight_bit_number, unsigned char *results, int *index)
     for (i = 3; i >= 0; i--)
       {
         results[(*index)++] = tempResults[i];
-	//	printf("ret: %d %g\n",(*index),tempResults[i]);
+	//	fprintf(stderr,"ret: %d %g\n",(*index),tempResults[i]);
       }
 }
 
@@ -1540,7 +1540,7 @@ void oneBit(int eight_bit_number, unsigned char *results, int *index)
     for (i = 7; i >= 0; i--)
       {
 	results[(*index)++] = tempResults[i];
-	//	printf("This pt: %d %g\n",*index,tempResults[i]);
+	//	fprintf(stderr,"This pt: %d %g\n",*index,tempResults[i]);
       }
 }
 
@@ -1551,7 +1551,7 @@ int andCount(unsigned char *cval,unsigned char *mask,int n)
   unsigned char c=0;
   for (i=0;i<n;i++)
     {
-      //      printf("Comparing %d %d\n",(int)cval[i],(int)mask[i]);
+      //      fprintf(stderr,"Comparing %d %d\n",(int)cval[i],(int)mask[i]);
 
       andRes = cval[i] & mask[i];
       for (c=0;andRes;c++)

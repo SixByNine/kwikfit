@@ -23,9 +23,9 @@ int main (int argc, char** argv){
    debugFlag=getB("--debug","-d",argc,argv,0);
    uint64_t nitr = getI("--nitr","-i",argc,argv,3);
    uint64_t nsubbin = getI("--nsub","-s",argc,argv,4);
-   logmsg("reading '%s'",template_fname);
+   logmsg("reading template file: '%s'",template_fname);
    kwikfit_template_t *tmpl = kwikfit_read_template(template_fname);
-   kwikfit_write(tmpl,stdout);
+
    FILE *out = fopen(outfile,"w");
    getArgs(&argc,argv);
 
@@ -93,35 +93,28 @@ int main (int argc, char** argv){
 		 logerr("error reading ctr_Freq");
 	  }
 
-
-
-	  logmsg("status: %d initflag: %d",status,initflag);
+	  logdbg("status: %d initflag: %d",status,initflag);
 	  double min = TKfindMin_f(prof,nbins);
 	  for(uint64_t i=0; i < nbins; i++){
 		 profile[i]=prof[i]-min;
 	  }
 	  free(prof);
+
 	  kwikfit_result_t *result = kwikfit_doFit(nbins,profile,tmpl,nitr,nsubbin);
 	  kwikfit_plot_result(result,pgdev);
-	  printf("\n\n");
-	  printf("%lf \u00b1 %lf\n",result->phase,result->error);
-	  if(result->phase < 0){
-		 printf("%lf \u00b1 %lf\n",result->phase+1.0,result->error);
-	  }
-	  result->phase;
+	  printf("%s: %lf \u00b1 %lf\n",argv[ifile],result->phase,result->error);
 
-	  //sub_offs -= tbin*nbins/2.0; // this is the start of bin 0 relative to the start
 	  double period=tbin*(double)nbins;
 	  long double tstart_s = (long double)hdr->phead.smjd + (long double)hdr->phead.stt_offs;
 	  long double t0 = tstart_s + (long double)sub_offs;
 	  long double t_off = result->phase * period;
 	  long double ToA = (long double)hdr->phead.imjd + (t0 + t_off)/86400.0;
 
-	  logmsg("stt_offs %f" ,hdr->phead.stt_offs);
-	  logmsg("imjd %d" ,hdr->phead.imjd);
-	  logmsg("smjd %f" ,hdr->phead.smjd);
-	  logmsg("sub_offs %lf" ,sub_offs);
-	  logmsg("period %lf" ,period);
+	  logdbg("stt_offs %f" ,hdr->phead.stt_offs);
+	  logdbg("imjd %d" ,hdr->phead.imjd);
+	  logdbg("smjd %f" ,hdr->phead.smjd);
+	  logdbg("sub_offs %lf" ,sub_offs);
+	  logdbg("period %lf" ,period);
 
 
 
@@ -132,6 +125,7 @@ int main (int argc, char** argv){
 		 fprintf(out," -kw%s %.2f",result->tmpl->profs[i].name,result->amplitudes[i]/ref);
 	  }
 	  fprintf(out,"\n");
+	  fprintf(stdout,"\n");
 	  fflush(out);
 	  kwikfit_free_result(result);
 	  freeDset(hdr);
